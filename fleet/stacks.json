@@ -1,0 +1,9 @@
+[
+  {
+    "stack_id": "stack-01",
+    "cluster_name": "substrate-test",
+    "zone": "us-west1-c",
+    "hardware_type": "c3-standard-44",
+    "status": "IDLE"
+  }
+]
