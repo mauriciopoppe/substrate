@@ -5,7 +5,7 @@ optimization:
     - name: composite_ns_per_op
       goal: minimize
       min_improvement_pct: 5.0
-      noise_tolerance_pct: 1.0
+      noise_tolerance_pct: 3.0
     - name: composite_bytes_per_op
       goal: minimize
       min_improvement_pct: 5.0
@@ -40,8 +40,12 @@ The benchmark suite evaluates three primary components executed during actor sus
 2. `composite_bytes_per_op` (Minimize): Total heap bytes allocated per operation.
 3. `composite_allocs_per_op` (Minimize): Total heap object allocations per operation.
 
-## Constraints
+## Constraints & Verification
 - `benchmark_failures` == 0: All unit tests and benchmarks must pass cleanly. Data integrity must be strictly maintained (all decoded streams and merged snapshots must be byte-exact).
+- Subagents can verify candidate code edits hermetically before proposing by running:
+  ```bash
+  go test -bench=. ./cmd/ateom-microvm/internal/ch/... ./cmd/atelet/internal/ategcs/... ./internal/tarutil/...
+  ```
 
 ## Authorized Code Refactoring Scope
 Mutations must be formulated as `[ACTION: CODE_REFACTOR]` proposals containing surgical source code patches across:
