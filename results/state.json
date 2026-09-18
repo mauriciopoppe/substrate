@@ -17,9 +17,18 @@
     }
   },
   "config": {
-    "target_pending_depth": 3,
-    "max_trials": null,
+    "target_pending_depth": 1,
+    "max_trials": 3,
     "timeout_sec": 300.0
   },
-  "campaign_id": "8e2d67b7-024d-4ed2-be54-e5853355d92a"
+  "campaign_id": "8e2d67b7-024d-4ed2-be54-e5853355d92a",
+  "in_flight_judgers": {},
+  "in_flight_generators": 0,
+  "in_flight_mutators": {},
+  "in_flight_runners": {},
+  "warnings": [],
+  "subagent_directive": {
+    "action": "CONTINUE",
+    "reason": "Workqueue initialized."
+  }
 }
