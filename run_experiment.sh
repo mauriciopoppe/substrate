@@ -8,7 +8,7 @@
 #    with Guaranteed QoS (Requests == Limits: 4 CPU, 8Gi RAM)
 # 4. Streams binaries into the Pod, runs benchmarks across iterations,
 #    and retrieves benchmark logs, binary pprof profiles, and readable text profiles
-# 5. Cleans up Pod reliably on exit (trap EXIT)
+# 5. Cleans up Pod reliably on exit (trap EXIT) and deletes <RESULTS_DIR>/bin/
 # 6. Generates <RESULTS_DIR>/summary.json containing composite & per-op metrics
 # ==============================================================================
 
@@ -61,12 +61,16 @@ NAMESPACE="${NAMESPACE:-microbench}"
 
 echo "Starting Substrate Go Microbenchmark execution in Pod ${POD_NAME} (${BENCHMARK_ITERATIONS} iterations)..."
 
-# Ensure cleanup on exit
-cleanup_pod() {
+# Ensure cleanup of Pod and temporary build binaries on exit
+cleanup_trial() {
   echo "Cleaning up Pod ${NAMESPACE}/${POD_NAME}..."
   kubectl delete pod "${POD_NAME}" -n "${NAMESPACE}" --wait=false 2>/dev/null || true
+  if [ -d "${BIN_DIR}" ]; then
+    echo "Cleaning up temporary binaries in ${BIN_DIR}..."
+    rm -rf "${BIN_DIR}"
+  fi
 }
-trap cleanup_pod EXIT
+trap cleanup_trial EXIT
 
 # Launch Guaranteed QoS Pod on the c3 node pool
 echo "Creating runner Pod ${POD_NAME} on c3 node pool (Guaranteed QoS: 4 CPU, 8Gi RAM)..."
