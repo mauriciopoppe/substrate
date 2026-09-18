@@ -48,3 +48,24 @@ Mutations must be formulated as `[ACTION: CODE_REFACTOR]` proposals containing s
 - `substrate/cmd/ateom-microvm/internal/ch/`
 - `substrate/cmd/atelet/internal/ategcs/`
 - `substrate/internal/tarutil/`
+
+### Candidate Generation Directives & Hot-Path Focus
+
+#### Subsystem Architecture & Target Hotpaths
+To ensure comprehensive exploration and prevent hyper-local optimization within a single component, the Generator must track and rotate across 3 distinct runtime subsystems:
+1. **Subsystem A (`ategcs`)**: Extent compression and parallel zstd chunk encoding/decoding (`substrate/cmd/atelet/internal/ategcs/sparsezstd.go`).
+2. **Subsystem B (`ch`)**: Sparse memory overlay merging and kernel sparse region copying (`substrate/cmd/ateom-microvm/internal/ch/merge.go`).
+3. **Subsystem C (`tarutil`)**: Rootfs archive streaming, upper layer packaging, and directory extraction (`substrate/internal/tarutil/tarutil.go`).
+
+#### Preferred Exploration Archetypes & Recipes
+- Zero-allocation buffer reuse: Replace per-operation slice allocations with pooled buffers (`sync.Pool` with reset semantics).
+- Sliced and chunked processing: Optimize buffer size thresholds for I/O and compression chunks to avoid heap escapes.
+- Lock contention reduction: Minimize critical section duration and avoid global locks on hot reader paths.
+- Direct slice passing: Eliminate unnecessary intermediate conversions between `[]byte` and `io.Reader`/`io.Writer`.
+
+### Anti-Stagnation & Convergence Policy
+- **Historical Analysis Required**: Before formulating a new hypothesis, the Generator MUST inspect prior living trial summaries (`results/raw/<trial_id>/summary.md`) and the recent changelog ledger to identify refuted patterns, rejected approaches, and regressions.
+- **Stagnation Circuit Breaker**: If 3 consecutive trials targeting a specific subsystem produce non-improving results (status `REJECTED`, outcome `DISCARD`, or metric gain < 5%), that subsystem enters state `STALLED`.
+- **Mandatory Subsystem Pivot (`[ACTION: SUBSYSTEM_PIVOT]`)**: When a subsystem is `STALLED`, the Generator is strictly prohibited from proposing further changes to that subsystem. It MUST pivot to the next active or unexplored subsystem in rotation order (`ategcs` -> `ch` -> `tarutil` -> `ategcs`).
+- **Archetype Diversity Guardrail**: The Generator must avoid proposing more than 2 consecutive variations of the exact same optimization technique within a subsystem (e.g., after 2 pool buffer size variations, pivot to concurrency, streaming chunking, or I/O syscall optimization).
+
