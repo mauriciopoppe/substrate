@@ -1,7 +1,5 @@
 {
   "status": "COMPLETED",
-  "iterations": 3,
-  "median_iteration_index": 3,
   "metrics": {
     "resume_actor_p95_ms": 3000.0,
     "read_ram_after_resume_p95_ms": 3400.0,
@@ -257,47 +255,6 @@
       "99.9%": "8300",
       "99.99%": "8300",
       "100%": "8300"
-    }
-  ],
-  "iteration_breakdown": [
-    {
-      "iteration": 2,
-      "metrics": {
-        "resume_actor_p95_ms": 3000.0,
-        "read_ram_after_resume_p95_ms": 3400.0,
-        "suspend_actor_p95_ms": 3500.0
-      },
-      "constraints": {
-        "error_rate": 0.0,
-        "node_oom_events": 0,
-        "client_send_rate_ratio": 1.0
-      }
-    },
-    {
-      "iteration": 3,
-      "metrics": {
-        "resume_actor_p95_ms": 3000.0,
-        "read_ram_after_resume_p95_ms": 3400.0,
-        "suspend_actor_p95_ms": 3300.0
-      },
-      "constraints": {
-        "error_rate": 0.0,
-        "node_oom_events": 0,
-        "client_send_rate_ratio": 1.0
-      }
-    },
-    {
-      "iteration": 1,
-      "metrics": {
-        "resume_actor_p95_ms": 3200.0,
-        "read_ram_after_resume_p95_ms": 3400.0,
-        "suspend_actor_p95_ms": 3400.0
-      },
-      "constraints": {
-        "error_rate": 0.0,
-        "node_oom_events": 0,
-        "client_send_rate_ratio": 1.0
-      }
     }
   ]
 }

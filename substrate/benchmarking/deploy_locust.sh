@@ -22,7 +22,8 @@
 
 set -o errexit -o nounset -o pipefail
 
-ROOT="$(git rev-parse --show-toplevel)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+ROOT="$(cd "${SCRIPT_DIR}/.." &>/dev/null && pwd)"
 BENCHMARKING_DIR="${ROOT}/benchmarking"
 
 WORKER_COUNT=1

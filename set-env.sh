@@ -38,10 +38,13 @@ mkdir -p "${SCRATCH_DIR}"
 
 # Target Project & Cluster (Discovered from active GCP environment)
 export PROJECT_ID="${PROJECT_ID:-mauriciopoppe-gke-dev}"
-export CLUSTER_NAME="${CLUSTER_NAME:-substrate-test}"
+export CLUSTER_NAME="${CLUSTER_NAME:-substrate-test-2}"
 export COMPUTE_REGION="${COMPUTE_REGION:-us-west1}"
 export COMPUTE_ZONE="${COMPUTE_ZONE:-us-west1-c}"
 export NAMESPACE="${NAMESPACE:-benchmarking}"
+export BUCKET_NAME="${BUCKET_NAME:-ate-snapshots-mauriciopoppe-gke-dev-us-west1-c}"
+export KO_DOCKER_REPO="${KO_DOCKER_REPO:-gcr.io/${PROJECT_ID}/ate-images}"
+export KO_DEFAULTPLATFORMS="${KO_DEFAULTPLATFORMS:-linux/amd64}"
 
 # Ensure the correct project and account are set in the isolated gcloud config
 gcloud config set project "${PROJECT_ID}" 2>/dev/null || true

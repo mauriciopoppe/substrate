@@ -46,7 +46,8 @@
 
 set -o errexit -o nounset -o pipefail
 
-ROOT="$(git rev-parse --show-toplevel)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
 ARCH="${ARCH:-arm64}"
 KATA_VER="${KATA_VER:-4.0.0}"
