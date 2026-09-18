@@ -1,0 +1,25 @@
+{
+  "current_phase": "STATE_CHECK_WORK",
+  "next_trial_number": 1,
+  "champion_trial_id": "v000",
+  "pareto_frontier": [
+    "v000"
+  ],
+  "stacks": {
+    "stack-01": {
+      "status": "IDLE"
+    },
+    "stack-02": {
+      "status": "IDLE"
+    },
+    "stack-03": {
+      "status": "IDLE"
+    }
+  },
+  "config": {
+    "target_pending_depth": 3,
+    "max_trials": null,
+    "timeout_sec": 300.0
+  },
+  "campaign_id": "8e2d67b7-024d-4ed2-be54-e5853355d92a"
+}
