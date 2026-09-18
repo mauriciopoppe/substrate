@@ -26,51 +26,6 @@
       "hardware_type": "c3-standard-44-virtual",
       "node_pool": "substrate-bench-pool",
       "status": "IDLE"
-    },
-    {
-      "id": "stack-04",
-      "cluster_name": "substrate-test-2",
-      "compute_zone": "us-west1-c",
-      "zone": "us-west1-c",
-      "hardware_type": "c3-standard-44-virtual",
-      "node_pool": "substrate-bench-pool",
-      "status": "IDLE"
-    },
-    {
-      "id": "stack-05",
-      "cluster_name": "substrate-test-2",
-      "compute_zone": "us-west1-c",
-      "zone": "us-west1-c",
-      "hardware_type": "c3-standard-44-virtual",
-      "node_pool": "substrate-bench-pool",
-      "status": "IDLE"
-    },
-    {
-      "id": "stack-06",
-      "cluster_name": "substrate-test-2",
-      "compute_zone": "us-west1-c",
-      "zone": "us-west1-c",
-      "hardware_type": "c3-standard-44-virtual",
-      "node_pool": "substrate-bench-pool",
-      "status": "IDLE"
-    },
-    {
-      "id": "stack-07",
-      "cluster_name": "substrate-test-2",
-      "compute_zone": "us-west1-c",
-      "zone": "us-west1-c",
-      "hardware_type": "c3-standard-44-virtual",
-      "node_pool": "substrate-bench-pool",
-      "status": "IDLE"
-    },
-    {
-      "id": "stack-08",
-      "cluster_name": "substrate-test-2",
-      "compute_zone": "us-west1-c",
-      "zone": "us-west1-c",
-      "hardware_type": "c3-standard-44-virtual",
-      "node_pool": "substrate-bench-pool",
-      "status": "IDLE"
     }
   ]
 }
