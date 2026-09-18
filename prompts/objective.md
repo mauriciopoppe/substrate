@@ -48,9 +48,3 @@ Mutations must be formulated as `[ACTION: CODE_REFACTOR]` proposals containing s
 - `substrate/cmd/ateom-microvm/internal/ch/`
 - `substrate/cmd/atelet/internal/ategcs/`
 - `substrate/internal/tarutil/`
-
-## High-ROI Optimization Hypotheses
-- **Buffer Pooling**: Replace ad-hoc buffer allocations (e.g. `make([]byte, 1<<20)`) with `sync.Pool` to eliminate heap churning and GC pauses.
-- **In-Kernel Copying**: Replace userspace read/write loops with `unix.CopyFileRange` or `splice` to avoid copying memory into userspace buffers.
-- **Native Sparse Copy**: Replace shell invocations (`exec.Command("cp", "--sparse=always", ...)`) with native Go extent traversal.
-- **Streaming Pipeline Parallelism**: Pipeline decompression and disk writes to exploit multi-core CPU concurrency.
