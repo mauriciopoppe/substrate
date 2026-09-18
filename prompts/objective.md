@@ -40,12 +40,9 @@ The benchmark suite evaluates three primary components executed during actor sus
 2. `composite_bytes_per_op` (Minimize): Total heap bytes allocated per operation.
 3. `composite_allocs_per_op` (Minimize): Total heap object allocations per operation.
 
-## Constraints & Verification
-- `benchmark_failures` == 0: All unit tests and benchmarks must pass cleanly. Data integrity must be strictly maintained (all decoded streams and merged snapshots must be byte-exact).
-- Subagents can verify candidate code edits hermetically before proposing by running:
-  ```bash
-  go test -bench=. ./cmd/ateom-microvm/internal/ch/... ./cmd/atelet/internal/ategcs/... ./internal/tarutil/...
-  ```
+## Constraints & Generator Role Boundaries
+- `benchmark_failures` == 0: All unit tests and benchmarks must pass cleanly in staged benchmark runs. Data integrity must be strictly maintained (all decoded streams and merged snapshots must be byte-exact).
+- **Read-Only Generator Invariant**: The Hypothesis Generator subagent operates strictly in **read-only mode**. It must NEVER execute test or benchmark commands (`go test`, `run_experiment.sh`) and must NEVER modify repository code or manifests directly. All mutations must be formulated purely as diff/patch proposals in `[ACTION: CODE_REFACTOR]`. Workspace staging and compilation testing are handled downstream by Mutator and Runner subagents in isolated worktrees.
 
 ## Authorized Code Refactoring Scope
 Mutations must be formulated as `[ACTION: CODE_REFACTOR]` proposals containing surgical source code patches across:
