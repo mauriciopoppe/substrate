@@ -12,6 +12,7 @@ optuna_study.db
 
 # SafeTune WorkQueue & Runner Ephemera
 results/.state.lock
+results/state_transitions.jsonl
 results/queue/
 results/scratch/
 results/test_dryrun/
