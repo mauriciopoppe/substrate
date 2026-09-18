@@ -1,0 +1,9 @@
+{
+  "status": "FAILED",
+  "outcome": "CRASH",
+  "reason": "Benchmark Execution Failed: Worktree directory disappeared during iteration 3 (bench.log: No such file or directory)",
+  "error_details": {
+    "anomaly_file": null,
+    "log_tail": ">>> [Iteration 3/3] Running benchmarks inside Pod...\n./run_experiment.sh: line 140: /usr/local/google/home/mauriciopoppe/go/src/user.git.corp.google.com/mauriciopoppe/gke-workload-perf/substrate-cpu-and-allocation-microbench/.worktrees/v004-ch-sparse-copy-pool-6748/results/raw/v004-ch-sparse-copy-pool-6748/iter_3/bench.log: No such file or directory\nError in iteration 3 (ategcs): Benchmark execution failed in Pod\ncat: /usr/local/google/home/mauriciopoppe/go/src/user.git.corp.google.com/mauriciopoppe/gke-workload-perf/substrate-cpu-and-allocation-microbench/.worktrees/v004-ch-sparse-copy-pool-6748/results/raw/v004-ch-sparse-copy-pool-6748/iter_3/bench.log: No such file or directory\nCleaning up Pod benchmarking/bench-runner-1789705947-22759..."
+  }
+}

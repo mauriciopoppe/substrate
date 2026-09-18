@@ -1,0 +1,37 @@
+File: tarutil.test
+Build ID: b24c9837dc83547383092199b43eb8c30cb1bf93
+Type: alloc_space
+Time: 2026-09-18 04:22:58 UTC
+Showing nodes accounting for 12974.63kB, 100% of 12974.63kB total
+Showing top 30 nodes out of 97
+      flat  flat%   sum%        cum   cum%
+ 1762.94kB 13.59% 13.59%  1762.94kB 13.59%  runtime/pprof.StartCPUProfile
+ 1024.22kB  7.89% 21.48%  1024.22kB  7.89%  archive/tar.FileInfoHeader
+ 1024.20kB  7.89% 29.38%  1024.20kB  7.89%  os.lstatatWithName
+ 1024.09kB  7.89% 37.27%  1024.09kB  7.89%  os.newFile
+ 1024.05kB  7.89% 45.16%  1024.05kB  7.89%  testing.(*B).ResetTimer
+  688.56kB  5.31% 50.47%   688.56kB  5.31%  compress/flate.(*fastGen).addBlock
+  655.29kB  5.05% 55.52%  1238.30kB  9.54%  compress/flate.NewWriter (inline)
+  583.01kB  4.49% 60.01%   583.01kB  4.49%  compress/flate.newFastEnc (inline)
+  578.66kB  4.46% 64.47%   578.66kB  4.46%  github.com/agent-substrate/substrate/internal/tarutil.init.func3
+     513kB  3.95% 68.43%      513kB  3.95%  runtime.mallocgc
+  512.25kB  3.95% 72.37%   512.25kB  3.95%  sync.(*Pool).pinSlow
+  512.11kB  3.95% 76.32%   512.11kB  3.95%  archive/tar.(*Reader).readHeader
+  512.10kB  3.95% 80.27%   512.10kB  3.95%  os.lstatNolog
+  512.08kB  3.95% 84.21%   512.08kB  3.95%  regexp/syntax.(*compiler).inst
+  512.03kB  3.95% 88.16%   512.03kB  3.95%  os.newUnixDirent
+  512.02kB  3.95% 92.11%  1024.05kB  7.89%  os.(*File).readdir
+  512.02kB  3.95% 96.05%   512.02kB  3.95%  os.splitPathInRoot
+  512.01kB  3.95%   100%  1090.67kB  8.41%  github.com/agent-substrate/substrate/internal/tarutil.copyPooled
+         0     0%   100%   512.11kB  3.95%  archive/tar.(*Reader).Next
+         0     0%   100%   512.11kB  3.95%  archive/tar.(*Reader).next
+         0     0%   100%   688.56kB  5.31%  compress/flate.(*Writer).Close (inline)
+         0     0%   100%   688.56kB  5.31%  compress/flate.(*compressor).close
+         0     0%   100%   688.56kB  5.31%  compress/flate.(*compressor).deflateFast
+         0     0%   100%   583.01kB  4.49%  compress/flate.(*compressor).init
+         0     0%   100%   688.56kB  5.31%  compress/flate.(*fastEncL1).encode
+         0     0%   100%   688.56kB  5.31%  compress/gzip.(*Writer).Close
+         0     0%   100%  1238.30kB  9.54%  compress/gzip.(*Writer).Write
+         0     0%   100%   512.25kB  3.95%  fmt.Sprintf
+         0     0%   100%   512.25kB  3.95%  fmt.newPrinter
+         0     0%   100%  2560.60kB 19.74%  github.com/agent-substrate/substrate/internal/tarutil.BenchmarkCreate
