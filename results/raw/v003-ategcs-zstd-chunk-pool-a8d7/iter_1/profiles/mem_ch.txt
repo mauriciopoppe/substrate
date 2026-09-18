@@ -1,0 +1,22 @@
+File: ch.test
+Build ID: 553f0342467d5da7d3e3cdb913457e27bce85c87
+Type: alloc_space
+Time: 2026-09-18 04:29:25 UTC
+Showing nodes accounting for 108.30MB, 98.63% of 109.80MB total
+Dropped 19 nodes (cum <= 0.55MB)
+      flat  flat%   sum%        cum   cum%
+   73.04MB 66.52% 66.52%    73.04MB 66.52%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.fill (inline)
+   33.54MB 30.55% 97.06%    33.54MB 30.55%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.copySparseRegions
+    1.72MB  1.57% 98.63%     1.72MB  1.57%  runtime/pprof.StartCPUProfile
+         0     0% 98.63%    49.35MB 44.95%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.BenchmarkCopySparseRegions
+         0     0% 98.63%    57.22MB 52.12%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.BenchmarkMergeDeltaIntoBase
+         0     0% 98.63%     4.63MB  4.21%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.MergeDeltaIntoBase
+         0     0% 98.63%    24.29MB 22.12%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.cloneFile
+         0     0% 98.63%     2.22MB  2.02%  main.main
+         0     0% 98.63%     2.22MB  2.02%  runtime.main
+         0     0% 98.63%    64.27MB 58.54%  testing.(*B).launch
+         0     0% 98.63%    42.30MB 38.53%  testing.(*B).run1.func1
+         0     0% 98.63%   106.58MB 97.06%  testing.(*B).runN
+         0     0% 98.63%     2.22MB  2.02%  testing.(*M).Run
+         0     0% 98.63%     2.22MB  2.02%  testing.(*M).before
+         0     0% 98.63%     1.72MB  1.57%  testing/internal/testdeps.TestDeps.StartCPUProfile

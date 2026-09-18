@@ -1,0 +1,38 @@
+File: tarutil.test
+Build ID: 8e2fe5db4d65b8756590880c71dcd4220cfd9693
+Type: cpu
+Time: 2026-09-18 04:29:27 UTC
+Duration: 134.80ms, Total samples = 80ms (59.35%)
+Showing nodes accounting for 80ms, 100% of 80ms total
+Showing top 30 nodes out of 52
+      flat  flat%   sum%        cum   cum%
+      70ms 87.50% 87.50%       70ms 87.50%  internal/runtime/syscall/linux.Syscall6
+      10ms 12.50%   100%       10ms 12.50%  fmt.(*pp).doPrintf
+         0     0%   100%       10ms 12.50%  fmt.Sprintf
+         0     0%   100%       20ms 25.00%  github.com/agent-substrate/substrate/internal/tarutil.BenchmarkCreate
+         0     0%   100%       60ms 75.00%  github.com/agent-substrate/substrate/internal/tarutil.BenchmarkExtract
+         0     0%   100%       40ms 50.00%  github.com/agent-substrate/substrate/internal/tarutil.Extract
+         0     0%   100%       10ms 12.50%  github.com/agent-substrate/substrate/internal/tarutil.copyPooled
+         0     0%   100%       40ms 50.00%  github.com/agent-substrate/substrate/internal/tarutil.extractEntry
+         0     0%   100%       10ms 12.50%  internal/poll.(*FD).Write
+         0     0%   100%       10ms 12.50%  internal/poll.ignoringEINTRIO (inline)
+         0     0%   100%       10ms 12.50%  internal/syscall/unix.Mkdirat
+         0     0%   100%       10ms 12.50%  internal/syscall/unix.Openat
+         0     0%   100%       10ms 12.50%  internal/syscall/unix.Unlinkat
+         0     0%   100%       10ms 12.50%  io.CopyBuffer
+         0     0%   100%       10ms 12.50%  io.copyBuffer
+         0     0%   100%       10ms 12.50%  os.(*File).Write
+         0     0%   100%       10ms 12.50%  os.(*File).write (inline)
+         0     0%   100%       10ms 12.50%  os.(*Root).Mkdir
+         0     0%   100%       20ms 25.00%  os.(*Root).OpenFile
+         0     0%   100%       20ms 25.00%  os.OpenFile
+         0     0%   100%       10ms 12.50%  os.RemoveAll (inline)
+         0     0%   100%       20ms 25.00%  os.WriteFile
+         0     0%   100%       10ms 12.50%  os.doInRoot[go.shape.int]
+         0     0%   100%       10ms 12.50%  os.doInRoot[go.shape.struct {}]
+         0     0%   100%       50ms 62.50%  os.ignoringEINTR (inline)
+         0     0%   100%       10ms 12.50%  os.mkdirat (inline)
+         0     0%   100%       10ms 12.50%  os.mkdirat.1 (inline)
+         0     0%   100%       10ms 12.50%  os.newFile
+         0     0%   100%       20ms 25.00%  os.open
+         0     0%   100%       20ms 25.00%  os.openFileNolog

@@ -1,0 +1,38 @@
+File: tarutil.test
+Build ID: 8e2fe5db4d65b8756590880c71dcd4220cfd9693
+Type: cpu
+Time: 2026-09-18 04:29:32 UTC
+Duration: 145.62ms, Total samples = 90ms (61.81%)
+Showing nodes accounting for 90ms, 100% of 90ms total
+Showing top 30 nodes out of 65
+      flat  flat%   sum%        cum   cum%
+      60ms 66.67% 66.67%       60ms 66.67%  internal/runtime/syscall/linux.Syscall6
+      10ms 11.11% 77.78%       10ms 11.11%  archive/tar.(*block).computeChecksum (inline)
+      10ms 11.11% 88.89%       10ms 11.11%  runtime.(*pollDesc).publishInfo
+      10ms 11.11%   100%       70ms 77.78%  syscall.RawSyscall6
+         0     0%   100%       10ms 11.11%  archive/tar.(*Reader).Next
+         0     0%   100%       10ms 11.11%  archive/tar.(*Reader).next
+         0     0%   100%       10ms 11.11%  archive/tar.(*Reader).readHeader
+         0     0%   100%       10ms 11.11%  archive/tar.(*block).getFormat
+         0     0%   100%       30ms 33.33%  github.com/agent-substrate/substrate/internal/tarutil.BenchmarkCreate
+         0     0%   100%       60ms 66.67%  github.com/agent-substrate/substrate/internal/tarutil.BenchmarkExtract
+         0     0%   100%       20ms 22.22%  github.com/agent-substrate/substrate/internal/tarutil.Create (inline)
+         0     0%   100%       20ms 22.22%  github.com/agent-substrate/substrate/internal/tarutil.CreateFiltered
+         0     0%   100%       40ms 44.44%  github.com/agent-substrate/substrate/internal/tarutil.Extract
+         0     0%   100%       20ms 22.22%  github.com/agent-substrate/substrate/internal/tarutil.copyFileInto
+         0     0%   100%       20ms 22.22%  github.com/agent-substrate/substrate/internal/tarutil.copyPooled
+         0     0%   100%       30ms 33.33%  github.com/agent-substrate/substrate/internal/tarutil.extractEntry
+         0     0%   100%       20ms 22.22%  github.com/agent-substrate/substrate/internal/tarutil.writeTree
+         0     0%   100%       20ms 22.22%  github.com/agent-substrate/substrate/internal/tarutil.writeTree.func1
+         0     0%   100%       10ms 11.11%  internal/poll.(*FD).Close
+         0     0%   100%       10ms 11.11%  internal/poll.(*FD).Init
+         0     0%   100%       20ms 22.22%  internal/poll.(*FD).Write
+         0     0%   100%       10ms 11.11%  internal/poll.(*FD).decref
+         0     0%   100%       10ms 11.11%  internal/poll.(*FD).destroy
+         0     0%   100%       10ms 11.11%  internal/poll.(*SysFile).destroy (inline)
+         0     0%   100%       10ms 11.11%  internal/poll.(*pollDesc).init
+         0     0%   100%       20ms 22.22%  internal/poll.ignoringEINTRIO (inline)
+         0     0%   100%       10ms 11.11%  internal/poll.runtime_pollOpen
+         0     0%   100%       10ms 11.11%  internal/syscall/unix.Openat
+         0     0%   100%       10ms 11.11%  internal/syscall/unix.Unlinkat
+         0     0%   100%       20ms 22.22%  io.CopyBuffer
