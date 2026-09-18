@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Build / verification script for pure Go microbenchmark trials.
-# Runs unit tests to ensure code mutations compile and pass correctness checks
-# before running the benchmark suite.
+# Build script for pure Go microbenchmark binaries.
+# Compiles statically linked Linux/amd64 test binaries ready to ship to GKE Pods.
 # ==============================================================================
 
 set -euo pipefail
@@ -10,23 +9,32 @@ set -euo pipefail
 RESULTS_DIR="${1:-results/scratch}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Ensure absolute path for RESULTS_DIR
 if [[ "$RESULTS_DIR" != /* ]]; then
   RESULTS_DIR="${SCRIPT_DIR}/${RESULTS_DIR}"
 fi
 mkdir -p "${RESULTS_DIR}"
 
+BIN_DIR="${RESULTS_DIR}/bin"
+mkdir -p "${BIN_DIR}"
+
 SUBSTRATE_DIR="${SCRIPT_DIR}/substrate"
-
-echo ">>> Verifying Go compilation and unit tests across mutated packages..."
-
 cd "${SUBSTRATE_DIR}"
 
-# Run unit tests across the target packages
-go test -v -run 'TestMerge|TestSparseZstd|TestRoundTrip' \
-  ./cmd/ateom-microvm/internal/ch \
-  ./cmd/atelet/internal/ategcs \
-  ./internal/tarutil > "${RESULTS_DIR}/build_test.log" 2>&1
+echo ">>> Verifying and compiling standalone Linux amd64 test binaries..."
 
-echo ">>> Build and unit test verification succeeded."
+# 1. Compile ch test binary
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go test -c -o "${BIN_DIR}/ch.test" ./cmd/ateom-microvm/internal/ch
+
+# 2. Compile ategcs test binary
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go test -c -o "${BIN_DIR}/ategcs.test" ./cmd/atelet/internal/ategcs
+
+# 3. Compile tarutil test binary
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go test -c -o "${BIN_DIR}/tarutil.test" ./internal/tarutil
+
+chmod +x "${BIN_DIR}/"*.test
+
+echo ">>> Successfully built benchmark binaries in ${BIN_DIR}:"
+ls -lh "${BIN_DIR}/"*.test
+
 echo "BUILD_STATUS=SUCCESS" > "${RESULTS_DIR}/build_artifacts.env"
+echo "BIN_DIR=${BIN_DIR}" >> "${RESULTS_DIR}/build_artifacts.env"

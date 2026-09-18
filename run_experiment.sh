@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# WorkQueue Benchmark Execution Script for Pure Go Microbenchmark Suite
+# WorkQueue Benchmark Execution Script for Pure Go Microbenchmarks in GKE Pods
 # Conforms to the APO Benchmark Execution Contract:
 # 1. Accepts $1 as <RESULTS_DIR>, supports --iterations / -n (default: 3)
 # 2. Writes shell PID $! to <RESULTS_DIR>/monitor/benchmark.pid
-# 3. Streams stdout/stderr to <RESULTS_DIR>/benchmark_output.log
-# 4. Executes `go test -bench` across core hotpaths
-# 5. Generates <RESULTS_DIR>/summary.json containing composite & per-op metrics
+# 3. Creates a dedicated, isolated Runner Pod on the c3-standard-44 node
+#    with Guaranteed QoS (Requests == Limits: 4 CPU, 8Gi RAM)
+# 4. Streams binaries into the Pod, runs benchmarks across iterations,
+#    and retrieves benchmark logs and pprof profiles
+# 5. Cleans up Pod reliably on exit (trap EXIT)
+# 6. Generates <RESULTS_DIR>/summary.json containing composite & per-op metrics
 # ==============================================================================
 
 set -euo pipefail
@@ -38,22 +41,78 @@ fi
 mkdir -p "${RESULTS_DIR}/monitor" "${RESULTS_DIR}/profiles"
 echo $$ > "${RESULTS_DIR}/monitor/benchmark.pid"
 
-SUBSTRATE_DIR="${SCRIPT_DIR}/substrate"
-cd "${SUBSTRATE_DIR}"
-
-# Source tunables if present
-if [ -f "${SCRIPT_DIR}/manifests/tunables.env" ]; then
+# Source environment
+if [ -f "${SCRIPT_DIR}/set-env.sh" ]; then
   # shellcheck disable=SC1091
-  source "${SCRIPT_DIR}/manifests/tunables.env"
+  source "${SCRIPT_DIR}/set-env.sh"
 fi
 
-echo "Starting Substrate Go Microbenchmark execution in ${SUBSTRATE_DIR} (${BENCHMARK_ITERATIONS} iterations)..."
+# Ensure binaries exist
+BIN_DIR="${RESULTS_DIR}/bin"
+if [ ! -f "${BIN_DIR}/ch.test" ] || [ ! -f "${BIN_DIR}/ategcs.test" ] || [ ! -f "${BIN_DIR}/tarutil.test" ]; then
+  echo "Binaries not found in ${BIN_DIR}, invoking build.sh..."
+  "${SCRIPT_DIR}/build.sh" "${RESULTS_DIR}"
+fi
 
-# Packages to benchmark
-PACKAGES=(
-  "ch:./cmd/ateom-microvm/internal/ch:BenchmarkMergeDeltaIntoBase|BenchmarkCopySparseRegions"
-  "ategcs:./cmd/atelet/internal/ategcs:BenchmarkWriteSparseZstd|BenchmarkReadSparseZstd"
-  "tarutil:./internal/tarutil:BenchmarkExtract|BenchmarkCreate"
+# Unique run identifier for parallel execution safety
+RUN_ID="${RUN_ID:-$(date +%s)-$RANDOM}"
+POD_NAME="bench-runner-${RUN_ID}"
+NAMESPACE="${NAMESPACE:-microbench}"
+
+echo "Starting Substrate Go Microbenchmark execution in Pod ${POD_NAME} (${BENCHMARK_ITERATIONS} iterations)..."
+
+# Ensure cleanup on exit
+cleanup_pod() {
+  echo "Cleaning up Pod ${NAMESPACE}/${POD_NAME}..."
+  kubectl delete pod "${POD_NAME}" -n "${NAMESPACE}" --wait=false 2>/dev/null || true
+}
+trap cleanup_pod EXIT
+
+# Launch Guaranteed QoS Pod on the c3 node pool
+echo "Creating runner Pod ${POD_NAME} on c3 node pool (Guaranteed QoS: 4 CPU, 8Gi RAM)..."
+cat <<POD_EOF | kubectl apply -n "${NAMESPACE}" -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ${POD_NAME}
+  namespace: ${NAMESPACE}
+  labels:
+    app: microbench-runner
+    run-id: "${RUN_ID}"
+spec:
+  restartPolicy: Never
+  nodeSelector:
+    cloud.google.com/gke-nodepool: substrate-bench-pool
+  containers:
+  - name: runner
+    image: alpine:latest
+    command: ["sh", "-c", "mkdir -p /bench && trap : TERM INT; sleep 3600 & wait"]
+    resources:
+      requests:
+        cpu: "4"
+        memory: "8Gi"
+      limits:
+        cpu: "4"
+        memory: "8Gi"
+POD_EOF
+
+# Wait for Pod to be ready
+echo "Waiting for Pod ${POD_NAME} to be ready..."
+kubectl wait --for=condition=Ready "pod/${POD_NAME}" -n "${NAMESPACE}" --timeout=60s
+
+# Copy binaries into the Pod
+echo "Copying test binaries into Pod..."
+kubectl cp "${BIN_DIR}/ch.test" "${NAMESPACE}/${POD_NAME}:/bench/ch.test"
+kubectl cp "${BIN_DIR}/ategcs.test" "${NAMESPACE}/${POD_NAME}:/bench/ategcs.test"
+kubectl cp "${BIN_DIR}/tarutil.test" "${NAMESPACE}/${POD_NAME}:/bench/tarutil.test"
+
+kubectl exec -n "${NAMESPACE}" "${POD_NAME}" -- chmod +x /bench/ch.test /bench/ategcs.test /bench/tarutil.test
+
+# Packages & benchmarks to run
+BENCH_SPECS=(
+  "ch:/bench/ch.test:BenchmarkMergeDeltaIntoBase|BenchmarkCopySparseRegions"
+  "ategcs:/bench/ategcs.test:BenchmarkWriteSparseZstd|BenchmarkReadSparseZstd"
+  "tarutil:/bench/tarutil.test:BenchmarkExtract|BenchmarkCreate"
 )
 
 for ((i=1; i<=BENCHMARK_ITERATIONS; i++)); do
@@ -61,27 +120,34 @@ for ((i=1; i<=BENCHMARK_ITERATIONS; i++)); do
   ITER_PROFILES="${ITER_DIR}/profiles"
   mkdir -p "${ITER_DIR}" "${ITER_PROFILES}"
 
-  echo ">>> [Iteration ${i}/${BENCHMARK_ITERATIONS}] Running benchmarks..."
+  echo ">>> [Iteration ${i}/${BENCHMARK_ITERATIONS}] Running benchmarks inside Pod..."
   LOG_FILE="${ITER_DIR}/bench.log"
   : > "${LOG_FILE}"
 
-  for pkg_spec in "${PACKAGES[@]}"; do
-    IFS=":" read -r name path pattern <<< "${pkg_spec}"
-    PKG_CPU="${ITER_PROFILES}/cpu_${name}.pprof"
-    PKG_MEM="${ITER_PROFILES}/mem_${name}.pprof"
+  for spec in "${BENCH_SPECS[@]}"; do
+    IFS=":" read -r name bin_path pattern <<< "${spec}"
+    POD_CPU="/bench/cpu_${name}_iter${i}.pprof"
+    POD_MEM="/bench/mem_${name}_iter${i}.pprof"
+    LOCAL_CPU="${ITER_PROFILES}/cpu_${name}.pprof"
+    LOCAL_MEM="${ITER_PROFILES}/mem_${name}.pprof"
 
-    go test -bench="${pattern}" \
-      -benchtime=5x \
-      -benchmem \
-      -cpuprofile="${PKG_CPU}" \
-      -memprofile="${PKG_MEM}" \
-      -run=^$ \
-      "${path}" >> "${LOG_FILE}" 2>&1 || {
-        echo "Error in iteration ${i} (${name}): Benchmark execution failed" >&2
-        cat "${LOG_FILE}" >&2
-        python3 "${SCRIPT_DIR}/parse_benchmark.py" "${LOG_FILE}" "${ITER_DIR}" 2>/dev/null || true
-        exit 1
-      }
+    kubectl exec -n "${NAMESPACE}" "${POD_NAME}" -- \
+      "${bin_path}" \
+        -test.bench="${pattern}" \
+        -test.benchtime=5x \
+        -test.benchmem \
+        -test.cpuprofile="${POD_CPU}" \
+        -test.memprofile="${POD_MEM}" \
+        -test.run=^$ >> "${LOG_FILE}" 2>&1 || {
+          echo "Error in iteration ${i} (${name}): Benchmark execution failed in Pod" >&2
+          cat "${LOG_FILE}" >&2
+          python3 "${SCRIPT_DIR}/parse_benchmark.py" "${LOG_FILE}" "${ITER_DIR}" 2>/dev/null || true
+          exit 1
+        }
+
+    # Retrieve profiles from Pod
+    kubectl cp "${NAMESPACE}/${POD_NAME}:${POD_CPU}" "${LOCAL_CPU}" 2>/dev/null || true
+    kubectl cp "${NAMESPACE}/${POD_NAME}:${POD_MEM}" "${LOCAL_MEM}" 2>/dev/null || true
   done
 
   # Parse iteration metrics

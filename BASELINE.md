@@ -1,7 +1,9 @@
-# Substrate Hotpath Go Microbenchmark Baseline
+# Substrate Hotpath Go Microbenchmark Baseline (GCP C3 Pod)
 
-## Target Workload
-- **Environment**: Linux x86_64 (`Intel(R) Xeon(R) CPU @ 2.20GHz`, 24 cores)
+## Target Workload & Hardware
+- **Platform**: GKE cluster `substrate-test-2` (Project `mauriciopoppe-gke-dev`, zone `us-west1-c`)
+- **Execution Target**: Dedicated isolated Kubernetes Pod on `c3-standard-44` (`cloud.google.com/gke-nodepool: substrate-bench-pool`)
+- **QoS Class**: **Guaranteed** (Requests == Limits: `cpu: 4`, `memory: 8Gi`)
 - **Scope**: Pure Go hotpaths across snapshot merging, sparse extent zstd compression/decompression, and rootfs upper tar operations.
 - **Suite**: 3 iterations, median trial selected based on `composite_ns_per_op`.
 
@@ -9,23 +11,22 @@
 
 | Metric | Baseline Value | Optimization Goal |
 | :--- | :--- | :--- |
-| **`composite_ns_per_op`** | **237,785,523 ns/op (~237.8 ms)** | Minimize (CPU latency across all 6 hotpaths) |
-| **`composite_bytes_per_op`** | **330,094,515 B/op (~314.8 MiB)** | Minimize (Heap bytes allocated per operation) |
-| **`composite_allocs_per_op`** | **14,600 allocs/op** | Minimize (Heap allocations per operation) |
+| **`composite_ns_per_op`** | **58,009,016 ns/op (~58.0 ms)** | Minimize (CPU latency across all 6 hotpaths) |
+| **`composite_bytes_per_op`** | **111,988,491 B/op (~106.8 MiB)** | Minimize (Heap bytes allocated per operation) |
+| **`composite_allocs_per_op`** | **14,082 allocs/op** | Minimize (Heap allocations per operation) |
 | **`benchmark_failures`** | **0** | Constraint (<= 0) |
 
-## Per-Benchmark Breakdown
+## Per-Benchmark Breakdown on C3 Hardware
 
 | Benchmark | Latency (`ns/op`) | Memory Allocated (`B/op`) | Allocations (`allocs/op`) |
 | :--- | :--- | :--- | :--- |
-| `BenchmarkMergeDeltaIntoBase` | 6,233,513 ns/op (6.2 ms) | 1,051,027 B/op (~1 MiB) | 28 allocs/op |
-| `BenchmarkCopySparseRegions` | 22,024,543 ns/op (22.0 ms) | 1,048,784 B/op (~1 MiB) | 2 allocs/op |
-| `BenchmarkWriteSparseZstd` | 63,243,523 ns/op (63.2 ms) | 321,778,875 B/op (~306.9 MiB) | 249 allocs/op |
-| `BenchmarkReadSparseZstd` | 44,037,795 ns/op (44.0 ms) | 5,538,888 B/op (~5.3 MiB) | 40 allocs/op |
-| `BenchmarkExtract` | 80,819,685 ns/op (80.8 ms) | 356,673 B/op (~348 KiB) | 9,540 allocs/op |
-| `BenchmarkCreate` | 21,426,284 ns/op (21.4 ms) | 320,268 B/op (~312 KiB) | 4,741 allocs/op |
+| `BenchmarkMergeDeltaIntoBase` | 2,504,043 ns/op (2.5 ms) | 1,051,024 B/op (~1.0 MiB) | 28 allocs/op |
+| `BenchmarkCopySparseRegions` | 8,509,979 ns/op (8.5 ms) | 1,048,787 B/op (~1.0 MiB) | 2 allocs/op |
+| `BenchmarkWriteSparseZstd` | 18,721,702 ns/op (18.7 ms) | 103,656,238 B/op (~98.8 MiB) | 172 allocs/op |
+| `BenchmarkReadSparseZstd` | 17,656,710 ns/op (17.7 ms) | 5,534,833 B/op (~5.3 MiB) | 38 allocs/op |
+| `BenchmarkExtract` | 7,163,156 ns/op (7.2 ms) | 370,392 B/op (~361 KiB) | 9,541 allocs/op |
+| `BenchmarkCreate` | 3,453,426 ns/op (3.5 ms) | 327,217 B/op (~320 KiB) | 4,301 allocs/op |
 
-## Identified Optimization Opportunities
-1. **`BenchmarkWriteSparseZstd`**: Allocating ~307 MiB per operation due to unpooled zstd encoders and extent buffers.
-2. **`BenchmarkCopySparseRegions`**: Allocating a fresh 1 MiB chunk buffer on every call; can use `sync.Pool` or in-kernel `copy_file_range(2)`.
-3. **`BenchmarkExtract`**: High allocation count (9,540 allocs/op) from path string manipulations and metadata lookups.
+## Concurrency & Resource Isolation
+- Each trial provisions an ephemeral Pod (`bench-runner-<RUN_ID>`) with a unique run ID, enabling multiple independent APO optimization trials to execute in parallel without port, file, or memory collision.
+- The Pod is trapped on `EXIT` so cleanup occurs reliably even upon failure or cancellation.
