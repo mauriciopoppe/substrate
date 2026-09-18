@@ -1,0 +1,37 @@
+File: ch.test
+Build ID: a67afd18bf4115522b8e71f4d9984782cfe39707
+Type: alloc_space
+Time: 2026-09-18 05:08:35 UTC
+Showing nodes accounting for 81.53MB, 100% of 81.53MB total
+Showing top 30 nodes out of 42
+      flat  flat%   sum%        cum   cum%
+   73.04MB 89.58% 89.58%    73.04MB 89.58%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.fill (inline)
+    4.63MB  5.67% 95.26%     4.63MB  5.67%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.init.func1
+    1.16MB  1.42% 96.68%     1.16MB  1.42%  runtime/pprof.StartCPUProfile
+    0.67MB  0.82% 97.50%     0.67MB  0.82%  compress/flate.(*fastGen).addBlock
+    0.53MB  0.65% 98.15%     0.53MB  0.65%  compress/flate.(*compressor).init
+    0.50MB  0.62% 98.77%     0.50MB  0.62%  runtime/pprof.(*profMap).lookup
+    0.50MB  0.61% 99.39%     0.50MB  0.61%  runtime.mallocgc
+    0.50MB  0.61%   100%     0.50MB  0.61%  compress/gzip.NewWriterLevel
+         0     0%   100%     0.67MB  0.82%  compress/flate.(*Writer).Close (inline)
+         0     0%   100%     0.67MB  0.82%  compress/flate.(*compressor).close
+         0     0%   100%     0.67MB  0.82%  compress/flate.(*compressor).deflateFast
+         0     0%   100%     0.67MB  0.82%  compress/flate.(*fastEncL1).encode
+         0     0%   100%     0.53MB  0.65%  compress/flate.NewWriter (inline)
+         0     0%   100%     0.67MB  0.82%  compress/gzip.(*Writer).Close
+         0     0%   100%     0.53MB  0.65%  compress/gzip.(*Writer).Write
+         0     0%   100%    34.32MB 42.09%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.BenchmarkCopySparseRegions
+         0     0%   100%    43.34MB 53.16%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.BenchmarkMergeDeltaIntoBase
+         0     0%   100%     4.63MB  5.67%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.cloneFile
+         0     0%   100%     4.63MB  5.67%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.copySparseRegions
+         0     0%   100%     1.16MB  1.42%  main.main
+         0     0%   100%     0.50MB  0.61%  runtime.allocm
+         0     0%   100%     1.16MB  1.42%  runtime.main
+         0     0%   100%     0.50MB  0.61%  runtime.mstart
+         0     0%   100%     0.50MB  0.61%  runtime.mstart0
+         0     0%   100%     0.50MB  0.61%  runtime.mstart1
+         0     0%   100%     0.50MB  0.61%  runtime.newm
+         0     0%   100%     0.50MB  0.61%  runtime.newobject
+         0     0%   100%     0.50MB  0.61%  runtime.resetspinning
+         0     0%   100%     0.50MB  0.61%  runtime.schedule
+         0     0%   100%     0.50MB  0.61%  runtime.startm

@@ -23,10 +23,20 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"sync"
 
 	"github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/reaper"
 	"golang.org/x/sys/unix"
 )
+
+const sparseChunkSize = 1 << 20
+
+var sparseCopyBufPool = sync.Pool{
+	New: func() any {
+		b := make([]byte, sparseChunkSize)
+		return &b
+	},
+}
 
 // MergeSparseOverlay reconstructs a COMPLETE memory snapshot from an OnDemand
 // (userfaultfd) restore. CH's new snapshot (deltaFile) contains only the pages
@@ -181,7 +191,9 @@ func copySparseRegions(src, dst *os.File) (copied int64, err error) {
 	}
 	size := si.Size()
 	sfd := int(src.Fd())
-	buf := make([]byte, 1<<20)
+	bp := sparseCopyBufPool.Get().(*[]byte)
+	defer sparseCopyBufPool.Put(bp)
+	buf := *bp
 	off := int64(0)
 	for off < size {
 		// Next populated region [ds, de) in src.
