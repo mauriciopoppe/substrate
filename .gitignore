@@ -11,6 +11,7 @@ optuna_study.db
 *.pb.gz
 
 # SafeTune WorkQueue & Runner Ephemera
+results/state.json
 results/.state.lock
 results/state_transitions.jsonl
 results/queue/
