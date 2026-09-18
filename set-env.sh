@@ -57,6 +57,9 @@ fi
 if [ -f "${SCRIPT_DIR}/stacks.env" ]; then
   source "${SCRIPT_DIR}/stacks.env"
 fi
+if [ -f "${SCRIPT_DIR}/stack.env" ]; then
+  source "${SCRIPT_DIR}/stack.env"
+fi
 
 # Ensure cluster credentials exist in isolated KUBECONFIG (do not overwrite if already present)
 if ! kubectl config get-contexts "gke_${PROJECT_ID}_${COMPUTE_ZONE}_${CLUSTER_NAME}" &>/dev/null && ! kubectl config get-contexts "gke_${PROJECT_ID}_${COMPUTE_REGION}_${CLUSTER_NAME}" &>/dev/null && ! kubectl config get-contexts "${CLUSTER_NAME}" &>/dev/null; then
