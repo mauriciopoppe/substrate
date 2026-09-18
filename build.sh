@@ -6,6 +6,8 @@
 
 set -euo pipefail
 
+export GOFLAGS="${GOFLAGS:--mod=mod}"
+
 RESULTS_DIR="${1:-results/scratch}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 

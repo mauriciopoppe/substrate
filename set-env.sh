@@ -6,6 +6,7 @@ export SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
 REAL_USER=$(whoami)
 PYTHON_VERSION=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
 export PYTHONPATH="/usr/local/google/home/${REAL_USER}/.local/lib/python${PYTHON_VERSION}/site-packages:${PYTHONPATH}"
+export GOFLAGS="-mod=mod"
 
 # Capture the currently active global account before isolation
 ACTIVE_ACCOUNT=$(gcloud config get-value account 2>/dev/null)
