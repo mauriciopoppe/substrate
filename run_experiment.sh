@@ -7,7 +7,7 @@
 # 3. Creates a dedicated, isolated Runner Pod on the c3-standard-44 node
 #    with Guaranteed QoS (Requests == Limits: 4 CPU, 8Gi RAM)
 # 4. Streams binaries into the Pod, runs benchmarks across iterations,
-#    and retrieves benchmark logs and pprof profiles
+#    and retrieves benchmark logs, binary pprof profiles, and readable text profiles
 # 5. Cleans up Pod reliably on exit (trap EXIT)
 # 6. Generates <RESULTS_DIR>/summary.json containing composite & per-op metrics
 # ==============================================================================
@@ -110,9 +110,9 @@ kubectl exec -n "${NAMESPACE}" "${POD_NAME}" -- chmod +x /bench/ch.test /bench/a
 
 # Packages & benchmarks to run
 BENCH_SPECS=(
-  "ch:/bench/ch.test:BenchmarkMergeDeltaIntoBase|BenchmarkCopySparseRegions"
-  "ategcs:/bench/ategcs.test:BenchmarkWriteSparseZstd|BenchmarkReadSparseZstd"
-  "tarutil:/bench/tarutil.test:BenchmarkExtract|BenchmarkCreate"
+  "ch:${BIN_DIR}/ch.test:/bench/ch.test:BenchmarkMergeDeltaIntoBase|BenchmarkCopySparseRegions"
+  "ategcs:${BIN_DIR}/ategcs.test:/bench/ategcs.test:BenchmarkWriteSparseZstd|BenchmarkReadSparseZstd"
+  "tarutil:${BIN_DIR}/tarutil.test:/bench/tarutil.test:BenchmarkExtract|BenchmarkCreate"
 )
 
 for ((i=1; i<=BENCHMARK_ITERATIONS; i++)); do
@@ -125,14 +125,16 @@ for ((i=1; i<=BENCHMARK_ITERATIONS; i++)); do
   : > "${LOG_FILE}"
 
   for spec in "${BENCH_SPECS[@]}"; do
-    IFS=":" read -r name bin_path pattern <<< "${spec}"
+    IFS=":" read -r name local_bin pod_bin pattern <<< "${spec}"
     POD_CPU="/bench/cpu_${name}_iter${i}.pprof"
     POD_MEM="/bench/mem_${name}_iter${i}.pprof"
     LOCAL_CPU="${ITER_PROFILES}/cpu_${name}.pprof"
     LOCAL_MEM="${ITER_PROFILES}/mem_${name}.pprof"
+    TXT_CPU="${ITER_PROFILES}/cpu_${name}.txt"
+    TXT_MEM="${ITER_PROFILES}/mem_${name}.txt"
 
     kubectl exec -n "${NAMESPACE}" "${POD_NAME}" -- \
-      "${bin_path}" \
+      "${pod_bin}" \
         -test.bench="${pattern}" \
         -test.benchtime=5x \
         -test.benchmem \
@@ -145,9 +147,17 @@ for ((i=1; i<=BENCHMARK_ITERATIONS; i++)); do
           exit 1
         }
 
-    # Retrieve profiles from Pod
+    # Retrieve binary profiles from Pod
     kubectl cp "${NAMESPACE}/${POD_NAME}:${POD_CPU}" "${LOCAL_CPU}" 2>/dev/null || true
     kubectl cp "${NAMESPACE}/${POD_NAME}:${POD_MEM}" "${LOCAL_MEM}" 2>/dev/null || true
+
+    # Generate version-controllable plain text profile summaries
+    if [ -f "${LOCAL_CPU}" ]; then
+      go tool pprof -top -nodecount=30 "${local_bin}" "${LOCAL_CPU}" > "${TXT_CPU}" 2>/dev/null || true
+    fi
+    if [ -f "${LOCAL_MEM}" ]; then
+      go tool pprof -top -nodecount=30 "${local_bin}" "${LOCAL_MEM}" > "${TXT_MEM}" 2>/dev/null || true
+    fi
   done
 
   # Parse iteration metrics

@@ -1,0 +1,38 @@
+File: ategcs.test
+Build ID: 1f3af1fc617dc52f693336c7c2c5182d0360a2dc
+Type: cpu
+Time: 2026-09-18 03:26:33 UTC
+Duration: 444.35ms, Total samples = 430ms (96.77%)
+Showing nodes accounting for 430ms, 100% of 430ms total
+Showing top 30 nodes out of 96
+      flat  flat%   sum%        cum   cum%
+      90ms 20.93% 20.93%       90ms 20.93%  internal/runtime/syscall/linux.Syscall6
+      80ms 18.60% 39.53%       80ms 18.60%  runtime.memmove
+      60ms 13.95% 53.49%       60ms 13.95%  runtime.memclrNoHeapPointers
+      40ms  9.30% 62.79%       70ms 16.28%  github.com/agent-substrate/substrate/cmd/atelet/internal/ategcs.writeSparseSourceTB
+      40ms  9.30% 72.09%       40ms  9.30%  github.com/klauspost/compress/zstd.sequenceDecs_decodeSync_safe_bmi2
+      40ms  9.30% 81.40%       40ms  9.30%  github.com/klauspost/compress/zstd/internal/xxhash.writeBlocks
+      20ms  4.65% 86.05%       50ms 11.63%  runtime.scanObject
+      10ms  2.33% 88.37%       10ms  2.33%  github.com/klauspost/compress/zstd.matchLen
+      10ms  2.33% 90.70%       10ms  2.33%  runtime.cansemacquire
+      10ms  2.33% 93.02%       10ms  2.33%  runtime.findObject
+      10ms  2.33% 95.35%       50ms 11.63%  runtime.gcDrain
+      10ms  2.33% 97.67%       10ms  2.33%  runtime.tryDeferToSpanScan
+      10ms  2.33%   100%       10ms  2.33%  runtime.typePointers.nextFast (inline)
+         0     0%   100%       20ms  4.65%  github.com/agent-substrate/substrate/cmd/atelet/internal/ategcs.(*parZstd).Write
+         0     0%   100%       90ms 20.93%  github.com/agent-substrate/substrate/cmd/atelet/internal/ategcs.(*parZstd).worker
+         0     0%   100%      170ms 39.53%  github.com/agent-substrate/substrate/cmd/atelet/internal/ategcs.BenchmarkReadSparseZstd
+         0     0%   100%      100ms 23.26%  github.com/agent-substrate/substrate/cmd/atelet/internal/ategcs.BenchmarkWriteSparseZstd
+         0     0%   100%       50ms 11.63%  github.com/agent-substrate/substrate/cmd/atelet/internal/ategcs.newParZstd
+         0     0%   100%      100ms 23.26%  github.com/agent-substrate/substrate/cmd/atelet/internal/ategcs.readSparseZstd
+         0     0%   100%       80ms 18.60%  github.com/agent-substrate/substrate/cmd/atelet/internal/ategcs.writeSparseZstd
+         0     0%   100%       70ms 16.28%  github.com/klauspost/compress/zstd.(*Decoder).Read
+         0     0%   100%       70ms 16.28%  github.com/klauspost/compress/zstd.(*Decoder).nextBlock
+         0     0%   100%       70ms 16.28%  github.com/klauspost/compress/zstd.(*Decoder).nextBlockSync
+         0     0%   100%       90ms 20.93%  github.com/klauspost/compress/zstd.(*Encoder).EncodeAll
+         0     0%   100%       90ms 20.93%  github.com/klauspost/compress/zstd.(*Encoder).encodeAll
+         0     0%   100%       40ms  9.30%  github.com/klauspost/compress/zstd.(*blockDec).decodeBuf
+         0     0%   100%       40ms  9.30%  github.com/klauspost/compress/zstd.(*blockDec).decodeCompressed
+         0     0%   100%       40ms  9.30%  github.com/klauspost/compress/zstd.(*fastBase).addBlock
+         0     0%   100%       10ms  2.33%  github.com/klauspost/compress/zstd.(*fastBase).ensureHist (inline)
+         0     0%   100%       10ms  2.33%  github.com/klauspost/compress/zstd.(*fastBase).matchlen (inline)

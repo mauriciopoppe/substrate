@@ -1,0 +1,30 @@
+File: ch.test
+Build ID: 30eb79282f5a5cf5708219c494902b25cab084a4
+Type: alloc_space
+Time: 2026-09-18 03:26:27 UTC
+Showing nodes accounting for 106.09MB, 98.60% of 107.59MB total
+Dropped 14 nodes (cum <= 0.54MB)
+      flat  flat%   sum%        cum   cum%
+   70.72MB 65.73% 65.73%    70.72MB 65.73%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.fill (inline)
+   33.54MB 31.17% 96.90%    33.54MB 31.17%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.copySparseRegions
+    1.16MB  1.07% 97.98%     1.16MB  1.07%  runtime/pprof.StartCPUProfile
+    0.67MB  0.62% 98.60%     0.67MB  0.62%  compress/flate.(*fastGen).addBlock
+         0     0% 98.60%     0.67MB  0.62%  compress/flate.(*Writer).Close (inline)
+         0     0% 98.60%     0.67MB  0.62%  compress/flate.(*compressor).close
+         0     0% 98.60%     0.67MB  0.62%  compress/flate.(*compressor).deflateFast
+         0     0% 98.60%     0.67MB  0.62%  compress/flate.(*fastEncL1).encode
+         0     0% 98.60%     0.67MB  0.62%  compress/gzip.(*Writer).Close
+         0     0% 98.60%    48.20MB 44.80%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.BenchmarkCopySparseRegions
+         0     0% 98.60%    56.07MB 52.11%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.BenchmarkMergeDeltaIntoBase
+         0     0% 98.60%     5.78MB  5.37%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.MergeDeltaIntoBase
+         0     0% 98.60%    21.97MB 20.42%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.cloneFile
+         0     0% 98.60%     1.16MB  1.07%  main.main
+         0     0% 98.60%     1.16MB  1.07%  runtime.main
+         0     0% 98.60%     0.67MB  0.62%  runtime/pprof.(*profileBuilder).build
+         0     0% 98.60%     1.17MB  1.09%  runtime/pprof.profileWriter
+         0     0% 98.60%    66.59MB 61.89%  testing.(*B).launch
+         0     0% 98.60%    38.17MB 35.48%  testing.(*B).run1.func1
+         0     0% 98.60%   104.76MB 97.37%  testing.(*B).runN
+         0     0% 98.60%     1.16MB  1.07%  testing.(*M).Run
+         0     0% 98.60%     1.16MB  1.07%  testing.(*M).before
+         0     0% 98.60%     1.16MB  1.07%  testing/internal/testdeps.TestDeps.StartCPUProfile
