@@ -2,52 +2,55 @@
 optimization:
   backend: optuna
   metrics:
-    - name: resume_actor_p95_ms
+    - name: composite_ns_per_op
       goal: minimize
       min_improvement_pct: 5.0
       noise_tolerance_pct: 1.0
-    - name: read_ram_after_resume_p95_ms
+    - name: composite_bytes_per_op
       goal: minimize
       min_improvement_pct: 5.0
       noise_tolerance_pct: 1.0
-    - name: suspend_actor_p95_ms
+    - name: composite_allocs_per_op
       goal: minimize
       min_improvement_pct: 5.0
       noise_tolerance_pct: 1.0
   constraints:
-    - metric: error_rate
-      max: 0.001
-    - metric: node_oom_events
+    - metric: benchmark_failures
       max: 0
-    - metric: client_send_rate_ratio
-      min: 0.90
 ---
 
-# Workload Optimization Objective: Substrate Micro-VM Memory & Checkpoint Optimization (Go Codebase)
+# Workload Optimization Objective: Substrate Core Hotpath Go Microbenchmarks
 
-Optimize the Go source code of the Agent Substrate micro-VM runtime (`ateom-microvm`) and node supervisor (`atelet`) to minimize actor resume latency, post-resume page fault read latency, and suspend latency under strict reliability constraints.
+Optimize the pure Go source code of the Agent Substrate runtime components (`cmd/ateom-microvm/internal/ch`, `cmd/atelet/internal/ategcs`, and `internal/tarutil`) to minimize CPU latency (`composite_ns_per_op`), heap allocation volume (`composite_bytes_per_op`), and heap allocation count (`composite_allocs_per_op`) across the snapshot and restore critical path.
 
-## Target Hardware & Workload
-- Platform: GKE cluster `substrate-test-2` in zone `us-west1-c` (Project `mauriciopoppe-gke-dev`).
-- Machine Type: `c3-standard-44` (nested virtualization / KVM enabled).
-- Workload: `glutton_mem_1gi_microvm` running under Cloud-Hypervisor micro-VMs.
+## Benchmark Hotpaths Under Optimization
+The benchmark suite evaluates three primary components executed during actor suspend, snapshot upload, snapshot download, and actor resume:
+1. **Sparse Memory Overlay Merging (`cmd/ateom-microvm/internal/ch/merge.go`)**:
+   - `BenchmarkMergeDeltaIntoBase`: Renames base snapshot and overlays dirty delta pages into place.
+   - `BenchmarkCopySparseRegions`: Scans populated regions using `unix.Seek` (`SEEK_DATA`/`SEEK_HOLE`) and copies data chunks.
+2. **Sparse Extent Compression & Decompression (`cmd/atelet/internal/ategcs/sparsezstd.go`)**:
+   - `BenchmarkWriteSparseZstd`: Incremental extent scanning and parallel zstd chunk compression.
+   - `BenchmarkReadSparseZstd`: Streaming decompression and reconstruction of sparse disk images.
+3. **Rootfs Upper Layer Packaging (`internal/tarutil/tarutil.go`)**:
+   - `BenchmarkExtract`: Streaming extraction of overlay upper directories and metadata restoration.
+   - `BenchmarkCreate`: Tar archiving of directory trees while preserving file modes, device nodes, and xattrs.
 
-## Optimization Goals
-1. `resume_actor_p95_ms` (Minimize): Time required to restore and unpause a 1 GiB micro-VM actor.
-2. `read_ram_after_resume_p95_ms` (Minimize): Time required to traverse all resident pages after resume under demand paging.
-3. `suspend_actor_p95_ms` (Minimize): Time to pause, snapshot, and persist the actor memory state.
+## Target Objectives
+1. `composite_ns_per_op` (Minimize): Sum of CPU execution time per operation across the hotpaths.
+2. `composite_bytes_per_op` (Minimize): Total heap bytes allocated per operation.
+3. `composite_allocs_per_op` (Minimize): Total heap object allocations per operation.
 
 ## Constraints
-- `error_rate` <= 0.001 (99.9% success rate across all gRPC and HTTP operations).
-- `node_oom_events` == 0 (zero host kernel or cgroup OOM killer activations).
-- `client_send_rate_ratio` >= 0.90 (no client-side stalls).
+- `benchmark_failures` == 0: All unit tests and benchmarks must pass cleanly. Data integrity must be strictly maintained (all decoded streams and merged snapshots must be byte-exact).
 
 ## Authorized Code Refactoring Scope
 Mutations must be formulated as `[ACTION: CODE_REFACTOR]` proposals containing surgical source code patches across:
-- `substrate/cmd/ateom-microvm/` (Micro-VM sandbox service, CH client, restore, checkpoint, overlay, prefault)
-- `substrate/cmd/atelet/` (Node supervisor, snapshot download/upload, GCS client, bundle prep)
+- `substrate/cmd/ateom-microvm/internal/ch/`
+- `substrate/cmd/atelet/internal/ategcs/`
+- `substrate/internal/tarutil/`
 
-## Hypothesis-Driven Parameter & Feature Workflow
-Feature flags and parameter knobs are not pre-configured. The APO reasoning engine is responsible for hypothesizing, declaring, and tuning new flags or hyperparameters within `manifests/tunables.env` (using `# OPTUNA:` annotations) as needed for its proposed refactors.
-All variables in `manifests/tunables.env` prefixed with `FEATURE_*` are automatically propagated to the Kubernetes runtime environment before each trial.
-
+## High-ROI Optimization Hypotheses
+- **Buffer Pooling**: Replace ad-hoc buffer allocations (e.g. `make([]byte, 1<<20)`) with `sync.Pool` to eliminate heap churning and GC pauses.
+- **In-Kernel Copying**: Replace userspace read/write loops with `unix.CopyFileRange` or `splice` to avoid copying memory into userspace buffers.
+- **Native Sparse Copy**: Replace shell invocations (`exec.Command("cp", "--sparse=always", ...)`) with native Go extent traversal.
+- **Streaming Pipeline Parallelism**: Pipeline decompression and disk writes to exploit multi-core CPU concurrency.

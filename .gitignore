@@ -16,3 +16,5 @@ results/queue/
 results/scratch/
 results/test_dryrun/
 results/**/benchmark.pid
+*.test
+*.pprof
