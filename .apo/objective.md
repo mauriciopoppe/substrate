@@ -2,9 +2,9 @@
 optimization:
   backend: optuna
   allowed_file_scope:
-    - substrate/cmd/ateom-microvm/internal/ch/
-    - substrate/cmd/atelet/internal/ategcs/
-    - substrate/internal/tarutil/
+    - cmd/ateom-microvm/internal/ch/
+    - cmd/atelet/internal/ategcs/
+    - internal/tarutil/
   metrics:
     - name: ch_ns_per_op
       goal: minimize
@@ -59,9 +59,9 @@ The benchmark suite evaluates three primary components executed during actor sus
 
 ## Allowed File Scope & Refactoring Boundaries
 Mutations must be formulated strictly as pure Go source code refactors (`[ACTION: CODE_REFACTOR]`) containing surgical patches across:
-- `substrate/cmd/ateom-microvm/internal/ch/*.go` (including `merge.go`, `prefault.go`, `createvm.go`, `restorefds.go`, `guestclock.go`, `api.go`, and companion tests `*_test.go`)
-- `substrate/cmd/atelet/internal/ategcs/*.go` (including `sparsezstd.go`, `parzstd.go`, `gcssparse.go`, `sparseparts.go`, `rangedget.go`, `objects.go`, `s3.go`, `gcs.go`, and companion tests `*_test.go`)
-- `substrate/internal/tarutil/*.go` (including `tarutil.go`, `owner_linux.go`, `fifo_linux.go`, and companion tests `*_test.go`)
+- `cmd/ateom-microvm/internal/ch/*.go` (including `merge.go`, `prefault.go`, `createvm.go`, `restorefds.go`, `guestclock.go`, `api.go`, and companion tests `*_test.go`)
+- `cmd/atelet/internal/ategcs/*.go` (including `sparsezstd.go`, `parzstd.go`, `gcssparse.go`, `sparseparts.go`, `rangedget.go`, `objects.go`, `s3.go`, `gcs.go`, and companion tests `*_test.go`)
+- `internal/tarutil/*.go` (including `tarutil.go`, `owner_linux.go`, `fifo_linux.go`, and companion tests `*_test.go`)
 
 ### Strictly Prohibited Files
 To ensure reproducibility and isolate performance gains to algorithmic and memory-efficiency improvements in Go:
@@ -74,17 +74,17 @@ To ensure reproducibility and isolate performance gains to algorithmic and memor
 #### Subsystem Architecture & Target Hotpaths
 To ensure comprehensive exploration and prevent hyper-local optimization within a single component, the Generator must track and rotate across the three distinct runtime subsystems:
 1. **Subsystem A (`ategcs`)**:
-   - Extent serialization, format framing, and streaming decompression (`substrate/cmd/atelet/internal/ategcs/sparsezstd.go`).
-   - Parallel multi-threaded zstd chunk encoding, worker routine buffer pools, chunk synchronization, and GCS/S3 streaming parts (`substrate/cmd/atelet/internal/ategcs/parzstd.go`, `sparseparts.go`, `gcssparse.go`).
-   - Benchmark harness caller co-refactoring (`substrate/cmd/atelet/internal/ategcs/sparsezstd_bench_test.go`).
+   - Extent serialization, format framing, and streaming decompression (`cmd/atelet/internal/ategcs/sparsezstd.go`).
+   - Parallel multi-threaded zstd chunk encoding, worker routine buffer pools, chunk synchronization, and GCS/S3 streaming parts (`cmd/atelet/internal/ategcs/parzstd.go`, `sparseparts.go`, `gcssparse.go`).
+   - Benchmark harness caller co-refactoring (`cmd/atelet/internal/ategcs/sparsezstd_bench_test.go`).
 2. **Subsystem B (`ch`)**:
-   - Sparse memory overlay merging, hole scanning with `unix.Seek` (`SEEK_DATA`/`SEEK_HOLE`), and positional block copying (`substrate/cmd/ateom-microvm/internal/ch/merge.go`).
-   - File descriptor and memory pre-faulting routines (`substrate/cmd/ateom-microvm/internal/ch/prefault.go`, `restorefds.go`).
-   - Benchmark harness caller co-refactoring (`substrate/cmd/ateom-microvm/internal/ch/merge_bench_test.go`).
+   - Sparse memory overlay merging, hole scanning with `unix.Seek` (`SEEK_DATA`/`SEEK_HOLE`), and positional block copying (`cmd/ateom-microvm/internal/ch/merge.go`).
+   - File descriptor and memory pre-faulting routines (`cmd/ateom-microvm/internal/ch/prefault.go`, `restorefds.go`).
+   - Benchmark harness caller co-refactoring (`cmd/ateom-microvm/internal/ch/merge_bench_test.go`).
 3. **Subsystem C (`tarutil`)**:
-   - Rootfs archive streaming, upper layer packaging, directory extraction, and PAX extended attributes (`substrate/internal/tarutil/tarutil.go`).
-   - Inode identification, link counting, FIFO handling, and file stat caching (`substrate/internal/tarutil/owner_linux.go`, `fifo_linux.go`).
-   - Benchmark harness caller co-refactoring (`substrate/internal/tarutil/tarutil_bench_test.go`).
+   - Rootfs archive streaming, upper layer packaging, directory extraction, and PAX extended attributes (`internal/tarutil/tarutil.go`).
+   - Inode identification, link counting, FIFO handling, and file stat caching (`internal/tarutil/owner_linux.go`, `fifo_linux.go`).
+   - Benchmark harness caller co-refactoring (`internal/tarutil/tarutil_bench_test.go`).
 
 #### Preferred Exploration Archetypes & Recipes
 - Zero-allocation buffer reuse: Replace per-operation slice allocations with pooled buffers (`sync.Pool` with reset semantics).

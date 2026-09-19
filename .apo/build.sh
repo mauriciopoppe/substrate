@@ -20,8 +20,7 @@ mkdir -p "${RESULTS_DIR}"
 BIN_DIR="${RESULTS_DIR}/bin"
 mkdir -p "${BIN_DIR}"
 
-SUBSTRATE_DIR="${WORKLOAD_ROOT}/substrate"
-cd "${SUBSTRATE_DIR}"
+cd "${WORKLOAD_ROOT}"
 
 echo ">>> Verifying and compiling standalone Linux amd64 test binaries..."
 
