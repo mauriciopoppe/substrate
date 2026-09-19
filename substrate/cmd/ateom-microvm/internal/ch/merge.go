@@ -20,23 +20,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
-	"sync"
 
 	"github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/reaper"
 	"golang.org/x/sys/unix"
 )
 
-const sparseChunkSize = 1 << 20
-
-var sparseCopyBufPool = sync.Pool{
-	New: func() any {
-		b := make([]byte, sparseChunkSize)
-		return &b
-	},
-}
+// maxKernelCopy caps a single copy_file_range syscall to prevent monopolizing a thread.
+const maxKernelCopy = 1 << 30
 
 // MergeSparseOverlay reconstructs a COMPLETE memory snapshot from an OnDemand
 // (userfaultfd) restore. CH's new snapshot (deltaFile) contains only the pages
@@ -191,9 +183,7 @@ func copySparseRegions(src, dst *os.File) (copied int64, err error) {
 	}
 	size := si.Size()
 	sfd := int(src.Fd())
-	bp := sparseCopyBufPool.Get().(*[]byte)
-	defer sparseCopyBufPool.Put(bp)
-	buf := *bp
+	dfd := int(dst.Fd())
 	off := int64(0)
 	for off < size {
 		// Next populated region [ds, de) in src.
@@ -208,29 +198,28 @@ func copySparseRegions(src, dst *os.File) (copied int64, err error) {
 		if err != nil {
 			return copied, fmt.Errorf("SEEK_HOLE: %w", err)
 		}
-		if _, err := src.Seek(ds, io.SeekStart); err != nil {
-			return copied, err
-		}
-		if _, err := dst.Seek(ds, io.SeekStart); err != nil {
-			return copied, err
-		}
 		remaining := de - ds
+		curOff := ds
 		for remaining > 0 {
-			n := int64(len(buf))
-			if n > remaining {
-				n = remaining
+			toCopy := remaining
+			if toCopy > maxKernelCopy {
+				toCopy = maxKernelCopy
 			}
-			r, err := io.ReadFull(src, buf[:n])
-			if r > 0 {
-				if _, werr := dst.Write(buf[:r]); werr != nil {
-					return copied, werr
+			roff := curOff
+			woff := curOff
+			n, rerr := unix.CopyFileRange(sfd, &roff, dfd, &woff, int(toCopy), 0)
+			if rerr != nil {
+				if errors.Is(rerr, unix.EINTR) {
+					continue
 				}
-				copied += int64(r)
+				return copied, fmt.Errorf("copy_file_range: %w", rerr)
 			}
-			if err != nil {
-				return copied, fmt.Errorf("reading data region: %w", err)
+			if n == 0 {
+				return copied, errors.New("copy_file_range: unexpected EOF")
 			}
-			remaining -= int64(r)
+			copied += int64(n)
+			curOff += int64(n)
+			remaining -= int64(n)
 		}
 		off = de
 	}

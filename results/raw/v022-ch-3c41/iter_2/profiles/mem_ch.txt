@@ -1,0 +1,32 @@
+File: ch.test
+Build ID: 3852b854df929492efab83bf6bcfef4a632e35e8
+Type: alloc_space
+Time: 2026-09-19 01:29:19 UTC
+Showing nodes accounting for 73.38MB, 100% of 73.38MB total
+      flat  flat%   sum%        cum   cum%
+   70.72MB 96.38% 96.38%    70.72MB 96.38%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.fill (inline)
+    1.16MB  1.58% 97.95%     1.16MB  1.58%  runtime/pprof.StartCPUProfile
+       1MB  1.37% 99.32%        1MB  1.37%  runtime.mallocgc
+    0.50MB  0.68%   100%     0.50MB  0.68%  testing.(*B).ResetTimer
+         0     0%   100%    32.01MB 43.61%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.BenchmarkCopySparseRegions
+         0     0%   100%    38.72MB 52.76%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.BenchmarkMergeDeltaIntoBase
+         0     0%   100%     1.16MB  1.58%  main.main
+         0     0%   100%        1MB  1.37%  runtime.allocm
+         0     0%   100%     1.16MB  1.58%  runtime.main
+         0     0%   100%     0.50MB  0.68%  runtime.mcall
+         0     0%   100%     0.50MB  0.68%  runtime.mstart
+         0     0%   100%     0.50MB  0.68%  runtime.mstart0
+         0     0%   100%     0.50MB  0.68%  runtime.mstart1
+         0     0%   100%        1MB  1.37%  runtime.newm
+         0     0%   100%        1MB  1.37%  runtime.newobject
+         0     0%   100%     0.50MB  0.68%  runtime.park_m
+         0     0%   100%        1MB  1.37%  runtime.resetspinning
+         0     0%   100%        1MB  1.37%  runtime.schedule
+         0     0%   100%        1MB  1.37%  runtime.startm
+         0     0%   100%        1MB  1.37%  runtime.wakep
+         0     0%   100%    36.52MB 49.76%  testing.(*B).launch
+         0     0%   100%    34.71MB 47.29%  testing.(*B).run1.func1
+         0     0%   100%    71.22MB 97.06%  testing.(*B).runN
+         0     0%   100%     1.16MB  1.58%  testing.(*M).Run
+         0     0%   100%     1.16MB  1.58%  testing.(*M).before
+         0     0%   100%     1.16MB  1.58%  testing/internal/testdeps.TestDeps.StartCPUProfile

@@ -1,0 +1,68 @@
+{
+  "status": "COMPLETED",
+  "metrics": {
+    "composite_ns_per_op": 42944330.0,
+    "composite_bytes_per_op": 9185475.0,
+    "composite_allocs_per_op": 13180.0,
+    "BenchmarkMergeDeltaIntoBase_ns_per_op": 1717605.0,
+    "BenchmarkMergeDeltaIntoBase_bytes_per_op": 2448.0,
+    "BenchmarkMergeDeltaIntoBase_allocs_per_op": 27.0,
+    "BenchmarkCopySparseRegions_ns_per_op": 5593874.0,
+    "BenchmarkCopySparseRegions_bytes_per_op": 208.0,
+    "BenchmarkCopySparseRegions_allocs_per_op": 1.0,
+    "BenchmarkWriteSparseZstd_ns_per_op": 9430350.0,
+    "BenchmarkWriteSparseZstd_bytes_per_op": 7327472.0,
+    "BenchmarkWriteSparseZstd_allocs_per_op": 86.0,
+    "BenchmarkReadSparseZstd_ns_per_op": 15584135.0,
+    "BenchmarkReadSparseZstd_bytes_per_op": 1214625.0,
+    "BenchmarkReadSparseZstd_allocs_per_op": 25.0,
+    "BenchmarkExtract_ns_per_op": 7053625.0,
+    "BenchmarkExtract_bytes_per_op": 360756.0,
+    "BenchmarkExtract_allocs_per_op": 9140.0,
+    "BenchmarkCreate_ns_per_op": 3564741.0,
+    "BenchmarkCreate_bytes_per_op": 279966.0,
+    "BenchmarkCreate_allocs_per_op": 3901.0
+  },
+  "constraints": {
+    "benchmark_failures": 0
+  },
+  "benchmarks": {
+    "BenchmarkMergeDeltaIntoBase": {
+      "iterations": 5,
+      "ns_per_op": 1717605.0,
+      "bytes_per_op": 2448.0,
+      "allocs_per_op": 27.0
+    },
+    "BenchmarkCopySparseRegions": {
+      "iterations": 5,
+      "ns_per_op": 5593874.0,
+      "bytes_per_op": 208.0,
+      "allocs_per_op": 1.0
+    },
+    "BenchmarkWriteSparseZstd": {
+      "iterations": 5,
+      "ns_per_op": 9430350.0,
+      "bytes_per_op": 7327472.0,
+      "allocs_per_op": 86.0
+    },
+    "BenchmarkReadSparseZstd": {
+      "iterations": 5,
+      "ns_per_op": 15584135.0,
+      "bytes_per_op": 1214625.0,
+      "allocs_per_op": 25.0
+    },
+    "BenchmarkExtract": {
+      "iterations": 5,
+      "ns_per_op": 7053625.0,
+      "bytes_per_op": 360756.0,
+      "allocs_per_op": 9140.0
+    },
+    "BenchmarkCreate": {
+      "iterations": 5,
+      "ns_per_op": 3564741.0,
+      "bytes_per_op": 279966.0,
+      "allocs_per_op": 3901.0
+    }
+  },
+  "profiling_summary": {}
+}

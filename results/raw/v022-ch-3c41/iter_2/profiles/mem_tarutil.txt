@@ -1,0 +1,37 @@
+File: tarutil.test
+Build ID: 50803daeda5fdbd1acbf4fc8b5b8a5c11fb90c27
+Type: alloc_space
+Time: 2026-09-19 01:29:22 UTC
+Showing nodes accounting for 9835.93kB, 100% of 9835.93kB total
+Showing top 30 nodes out of 85
+      flat  flat%   sum%        cum   cum%
+ 1762.94kB 17.92% 17.92%  1762.94kB 17.92%  runtime/pprof.StartCPUProfile
+  688.56kB  7.00% 24.92%   688.56kB  7.00%  compress/flate.(*fastGen).addBlock
+  655.29kB  6.66% 31.59%  1168.29kB 11.88%  compress/flate.NewWriter
+  578.66kB  5.88% 37.47%   578.66kB  5.88%  github.com/agent-substrate/substrate/internal/tarutil.init.func3
+  516.01kB  5.25% 42.72%   516.01kB  5.25%  os.init.func1
+     513kB  5.22% 47.93%      513kB  5.22%  compress/flate.newHuffmanEncoder (inline)
+     513kB  5.22% 53.15%      513kB  5.22%  runtime.mallocgc
+  512.11kB  5.21% 58.35%  1024.12kB 10.41%  archive/tar.(*Reader).readHeader
+  512.10kB  5.21% 63.56%   512.10kB  5.21%  os.lstatNolog
+  512.10kB  5.21% 68.77%   512.10kB  5.21%  os.statNolog
+  512.08kB  5.21% 73.97%   512.08kB  5.21%  compress/gzip.NewWriterLevel
+  512.03kB  5.21% 79.18%   512.03kB  5.21%  os.joinPath
+  512.02kB  5.21% 84.38%  1024.03kB 10.41%  os.rootStat
+  512.01kB  5.21% 89.59%   512.01kB  5.21%  archive/tar.(*parser).parseString
+  512.01kB  5.21% 94.79%   512.01kB  5.21%  internal/strconv.formatBits
+  512.01kB  5.21%   100%   512.01kB  5.21%  syscall.ByteSliceFromString
+         0     0%   100%  1024.12kB 10.41%  archive/tar.(*Reader).Next
+         0     0%   100%  1024.12kB 10.41%  archive/tar.(*Reader).next
+         0     0%   100%   512.01kB  5.21%  archive/tar.(*Writer).WriteHeader
+         0     0%   100%   512.01kB  5.21%  archive/tar.(*Writer).templateV7Plus
+         0     0%   100%   512.01kB  5.21%  archive/tar.(*Writer).writeUSTARHeader
+         0     0%   100%   512.01kB  5.21%  archive/tar.(*formatter).formatOctal
+         0     0%   100%   512.01kB  5.21%  archive/tar.(*parser).parseNumeric
+         0     0%   100%   512.01kB  5.21%  archive/tar.(*parser).parseOctal
+         0     0%   100%   688.56kB  7.00%  compress/flate.(*Writer).Close
+         0     0%   100%   688.56kB  7.00%  compress/flate.(*compressor).close
+         0     0%   100%   688.56kB  7.00%  compress/flate.(*compressor).deflateFast
+         0     0%   100%      513kB  5.22%  compress/flate.(*compressor).init
+         0     0%   100%   688.56kB  7.00%  compress/flate.(*fastEncL1).encode
+         0     0%   100%      513kB  5.22%  compress/flate.newHuffmanBitWriter
