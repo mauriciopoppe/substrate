@@ -1,0 +1,37 @@
+File: ch.test
+Build ID: 75a574b82b1b5744f71808bfecf405e4a43e2b16
+Type: alloc_space
+Time: 2026-09-19 01:31:29 UTC
+Showing nodes accounting for 80.49MB, 100% of 80.49MB total
+Showing top 30 nodes out of 51
+      flat  flat%   sum%        cum   cum%
+   73.04MB 90.74% 90.74%    73.04MB 90.74%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.fill (inline)
+    3.47MB  4.31% 95.05%     3.47MB  4.31%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.init.func1
+    1.16MB  1.44% 96.49%     1.16MB  1.44%  runtime/pprof.StartCPUProfile
+    0.67MB  0.84% 97.32%     0.67MB  0.84%  compress/flate.(*fastGen).addBlock
+    0.64MB   0.8% 98.12%     0.64MB   0.8%  compress/flate.NewWriter (inline)
+    0.52MB  0.64% 98.76%     0.52MB  0.64%  regexp.(*bitState).reset
+    0.50MB  0.62% 99.38%     0.50MB  0.62%  runtime.mallocgc
+    0.50MB  0.62%   100%     0.50MB  0.62%  os.newFile
+         0     0%   100%     0.67MB  0.84%  compress/flate.(*Writer).Close (inline)
+         0     0%   100%     0.67MB  0.84%  compress/flate.(*compressor).close
+         0     0%   100%     0.67MB  0.84%  compress/flate.(*compressor).deflateFast
+         0     0%   100%     0.67MB  0.84%  compress/flate.(*fastEncL1).encode
+         0     0%   100%     0.67MB  0.84%  compress/gzip.(*Writer).Close
+         0     0%   100%     0.64MB   0.8%  compress/gzip.(*Writer).Write
+         0     0%   100%    33.16MB 41.20%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.BenchmarkCopySparseRegions
+         0     0%   100%    43.34MB 53.85%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.BenchmarkMergeDeltaIntoBase
+         0     0%   100%     3.47MB  4.31%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.cloneFile
+         0     0%   100%     3.47MB  4.31%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.copySparseRegions
+         0     0%   100%     2.17MB  2.70%  main.main
+         0     0%   100%     0.50MB  0.62%  os.Create (inline)
+         0     0%   100%     0.50MB  0.62%  os.OpenFile
+         0     0%   100%     0.50MB  0.62%  os.openFileNolog
+         0     0%   100%     0.52MB  0.64%  regexp.(*Regexp).MatchString (inline)
+         0     0%   100%     0.52MB  0.64%  regexp.(*Regexp).backtrack
+         0     0%   100%     0.52MB  0.64%  regexp.(*Regexp).doMatch (inline)
+         0     0%   100%     0.52MB  0.64%  regexp.(*Regexp).find
+         0     0%   100%     0.50MB  0.62%  runtime.allocm
+         0     0%   100%     2.17MB  2.70%  runtime.main
+         0     0%   100%     0.50MB  0.62%  runtime.mstart
+         0     0%   100%     0.50MB  0.62%  runtime.mstart0

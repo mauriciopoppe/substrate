@@ -1,0 +1,38 @@
+File: tarutil.test
+Build ID: 754cc1dac73b90817f894250da50d691dbf7587a
+Type: cpu
+Time: 2026-09-19 01:31:23 UTC
+Duration: 148.35ms, Total samples = 100ms (67.41%)
+Showing nodes accounting for 100ms, 100% of 100ms total
+Showing top 30 nodes out of 49
+      flat  flat%   sum%        cum   cum%
+      60ms 60.00% 60.00%       60ms 60.00%  internal/runtime/syscall/linux.Syscall6
+      10ms 10.00% 70.00%       10ms 10.00%  internal/runtime/atomic.(*Uint32).CompareAndSwap (inline)
+      10ms 10.00% 80.00%       30ms 30.00%  os.doInRoot[go.shape.struct {}]
+      10ms 10.00% 90.00%       10ms 10.00%  runtime.mallocgcTinySC2
+      10ms 10.00%   100%       10ms 10.00%  runtime.systemstack
+         0     0%   100%       10ms 10.00%  fmt.Sprintf
+         0     0%   100%       60ms 60.00%  github.com/agent-substrate/substrate/internal/tarutil.BenchmarkExtract
+         0     0%   100%       40ms 40.00%  github.com/agent-substrate/substrate/internal/tarutil.Extract
+         0     0%   100%       40ms 40.00%  github.com/agent-substrate/substrate/internal/tarutil.extractEntry
+         0     0%   100%       10ms 10.00%  github.com/agent-substrate/substrate/internal/tarutil.lchownEntry
+         0     0%   100%       30ms 30.00%  github.com/agent-substrate/substrate/internal/tarutil.restoreMeta
+         0     0%   100%       20ms 20.00%  internal/syscall/unix.Openat
+         0     0%   100%       40ms 40.00%  internal/syscall/unix.Unlinkat
+         0     0%   100%       10ms 10.00%  os.(*Root).Chmod (inline)
+         0     0%   100%       10ms 10.00%  os.(*Root).Chtimes (inline)
+         0     0%   100%       10ms 10.00%  os.(*Root).Lchown (inline)
+         0     0%   100%       10ms 10.00%  os.(*Root).OpenFile
+         0     0%   100%       40ms 40.00%  os.RemoveAll (inline)
+         0     0%   100%       10ms 10.00%  os.doInRoot[go.shape.int]
+         0     0%   100%       10ms 10.00%  os.doInRoot[go.shape.struct {}].func1
+         0     0%   100%       60ms 60.00%  os.ignoringEINTR (inline)
+         0     0%   100%       40ms 40.00%  os.removeAll
+         0     0%   100%       40ms 40.00%  os.removeAllFrom
+         0     0%   100%       10ms 10.00%  os.removedirat (inline)
+         0     0%   100%       10ms 10.00%  os.removedirat.func1 (inline)
+         0     0%   100%       30ms 30.00%  os.removefileat (inline)
+         0     0%   100%       30ms 30.00%  os.removefileat.func1 (inline)
+         0     0%   100%       10ms 10.00%  os.rootChmod
+         0     0%   100%       10ms 10.00%  os.rootChtimes
+         0     0%   100%       10ms 10.00%  os.rootLchown

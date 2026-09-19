@@ -1,0 +1,38 @@
+File: tarutil.test
+Build ID: 754cc1dac73b90817f894250da50d691dbf7587a
+Type: cpu
+Time: 2026-09-19 01:31:32 UTC
+Duration: 147.41ms, Total samples = 80ms (54.27%)
+Showing nodes accounting for 80ms, 100% of 80ms total
+Showing top 30 nodes out of 69
+      flat  flat%   sum%        cum   cum%
+      60ms 75.00% 75.00%       60ms 75.00%  internal/runtime/syscall/linux.Syscall6
+      10ms 12.50% 87.50%       20ms 25.00%  os.rootChtimes.func1
+      10ms 12.50%   100%       10ms 12.50%  runtime.mallocgcSmallScanNoHeaderSC5
+         0     0%   100%       10ms 12.50%  archive/tar.(*Writer).WriteHeader
+         0     0%   100%       10ms 12.50%  archive/tar.Header.allowedFormats
+         0     0%   100%       20ms 25.00%  github.com/agent-substrate/substrate/internal/tarutil.BenchmarkCreate
+         0     0%   100%       60ms 75.00%  github.com/agent-substrate/substrate/internal/tarutil.BenchmarkExtract
+         0     0%   100%       10ms 12.50%  github.com/agent-substrate/substrate/internal/tarutil.Create (inline)
+         0     0%   100%       10ms 12.50%  github.com/agent-substrate/substrate/internal/tarutil.CreateFiltered
+         0     0%   100%       40ms 50.00%  github.com/agent-substrate/substrate/internal/tarutil.Extract
+         0     0%   100%       40ms 50.00%  github.com/agent-substrate/substrate/internal/tarutil.extractEntry
+         0     0%   100%       10ms 12.50%  github.com/agent-substrate/substrate/internal/tarutil.lchownEntry
+         0     0%   100%       30ms 37.50%  github.com/agent-substrate/substrate/internal/tarutil.restoreMeta
+         0     0%   100%       10ms 12.50%  github.com/agent-substrate/substrate/internal/tarutil.writeTree
+         0     0%   100%       10ms 12.50%  github.com/agent-substrate/substrate/internal/tarutil.writeTree.func1
+         0     0%   100%       10ms 12.50%  internal/poll.(*FD).Close
+         0     0%   100%       10ms 12.50%  internal/poll.(*FD).decref
+         0     0%   100%       10ms 12.50%  internal/poll.(*FD).destroy
+         0     0%   100%       10ms 12.50%  internal/poll.(*SysFile).destroy (inline)
+         0     0%   100%       10ms 12.50%  internal/runtime/maps.NewEmptyMap (inline)
+         0     0%   100%       10ms 12.50%  internal/syscall/unix.Fchownat
+         0     0%   100%       10ms 12.50%  internal/syscall/unix.Openat
+         0     0%   100%       10ms 12.50%  internal/syscall/unix.Readlinkat
+         0     0%   100%       10ms 12.50%  internal/syscall/unix.Unlinkat
+         0     0%   100%       10ms 12.50%  os.(*File).Close (inline)
+         0     0%   100%       20ms 25.00%  os.(*Root).Chtimes (inline)
+         0     0%   100%       10ms 12.50%  os.(*Root).Lchown (inline)
+         0     0%   100%       10ms 12.50%  os.(*Root).OpenFile
+         0     0%   100%       10ms 12.50%  os.(*file).close
+         0     0%   100%       10ms 12.50%  os.OpenFile

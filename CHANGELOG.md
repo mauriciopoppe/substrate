@@ -21,3 +21,11 @@ Initialized the Agent Substrate Core Hotpath Go Microbenchmark optimization work
 | `v017-ategcs-9228` | `v007-ch-sparse-buf-pool-3cb6` | `sparsezstd.go (zstdDecoderPool)=CODE_REFACTOR` | Metrics Recorded | **KEEP** | `results/raw/v017-ategcs-9228/summary.md` |
 | `v015-tarutil-75c2` | `v007-ch-sparse-buf-pool-3cb6` | `tarutil.go (copyStatePool & FileInfo bypass)=CODE_REFACTOR` | `composite_ns_per_op`=49,230,299 ns/op (-17.2%), `composite_bytes_per_op`=26,671,934 B/op (-76.2%), `composite_allocs_per_op`=13,283 allocs/op (-5.7%), `benchmark_failures`=0 | **KEEP** | `results/raw/v015-tarutil-75c2/summary.md` |
 
+| `v019-ategcs-0472` | `v017-ategcs-9228` | `FEATURE_SPARSEZSTD_WRITE_POOL=true` | Metrics Recorded | **KEEP** | `results/raw/v019-ategcs-0472/summary.md` |
+| `v021-ch-5866` | `v017-ategcs-9228` | `FEATURE_CH_SPARSE_STAT=true` | Output: N/A (Judger Audit Rejected: Target worktree directory does not exist or was canceled/pruned by QueueManager) | **REJECTED** | `results/raw/v021-ch-5866/summary.md` |
+| `v018-ategcs-a6ad` | `v017-ategcs-9228` | `FEATURE_ZSTD_ENCODER_POOL_AND_ZERO_ALLOC_EXTENTS=true` | Metrics Recorded | **KEEP** | `results/raw/v018-ategcs-a6ad/summary.md` |
+| `v023-tarutil-1758` | `v019-ategcs-0472` | `FEATURE_COPY_STATE_POOL=true` | Output: N/A (Judger Audit Rejected: REJECTED: Duplicate refactor of trial v015-tarutil-75c2 (commit 2ec6a12) already present on main branch, resulting in empty physical worktree diff.) | **REJECTED** | `results/raw/v023-tarutil-1758/summary.md` |
+| `v022-ch-3c41` | `v017-ategcs-9228` | `FEATURE_COPY_FILE_RANGE=true` | Metrics Recorded | **KEEP** | `results/raw/v022-ch-3c41/summary.md` |
+| `v026-tarutil-e72b` | `v018-ategcs-a6ad` | `FEATURE_TARUTIL_MAP_AND_STAT_POOLING=true` | Output: N/A (Judger Audit Rejected: Target file not found in workload directory: substrate/internal/tarutil/tarutil.go (worktree does not exist)) | **REJECTED** | `results/raw/v026-tarutil-e72b/summary.md` |
+| `v024-tarutil-3a24` | `v019-ategcs-0472` | `FEATURE_TARUTIL_XATTR_POOL=true` | Metrics Recorded | **KEEP** | `results/raw/v024-tarutil-3a24/summary.md` |
+| `v028-tarutil-ac8c` | `v022-ch-3c41` | `FEATURE_TARUTIL_ZERO_ALLOC_XATTR_AND_MAP_POOL=true` | Metrics Recorded | **KEEP** | `results/raw/v028-tarutil-ac8c/summary.md` |
