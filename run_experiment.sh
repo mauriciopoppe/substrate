@@ -38,7 +38,7 @@ if [[ "$RESULTS_DIR" != /* ]]; then
   RESULTS_DIR="${SCRIPT_DIR}/${RESULTS_DIR}"
 fi
 
-mkdir -p "${RESULTS_DIR}/monitor/profiles" "${RESULTS_DIR}/profiles"
+mkdir -p "${RESULTS_DIR}/monitor/profiles"
 echo $$ > "${RESULTS_DIR}/monitor/benchmark.pid"
 echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Telemetry collection initialized by workload harness (PID=$$)" > "${RESULTS_DIR}/monitor/monitor_events.log"
 
@@ -216,13 +216,10 @@ monitor_dir = os.path.join(results_dir, "monitor")
 os.makedirs(monitor_dir, exist_ok=True)
 monitor_profiles_dir = os.path.join(monitor_dir, "profiles")
 os.makedirs(monitor_profiles_dir, exist_ok=True)
-dst_profiles_dir = os.path.join(results_dir, "profiles")
-os.makedirs(dst_profiles_dir, exist_ok=True)
 
 if os.path.exists(median_profiles_dir):
     for pf in os.listdir(median_profiles_dir):
         shutil.copy2(os.path.join(median_profiles_dir, pf), os.path.join(monitor_profiles_dir, pf))
-        shutil.copy2(os.path.join(median_profiles_dir, pf), os.path.join(dst_profiles_dir, pf))
 
 def extract_top_symbols(txt_file, top_n=5):
     if not os.path.exists(txt_file):
