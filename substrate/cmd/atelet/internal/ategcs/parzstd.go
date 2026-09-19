@@ -53,6 +53,18 @@ var parZstdOutPool = sync.Pool{
 	},
 }
 
+var zstdEncoderPool = sync.Pool{
+	New: func() any {
+		enc, err := zstd.NewWriter(nil,
+			zstd.WithEncoderLevel(zstd.SpeedFastest),
+			zstd.WithEncoderConcurrency(1))
+		if err != nil {
+			panic(err)
+		}
+		return enc
+	},
+}
+
 // parZstd is an io.WriteCloser that compresses what it is given as parallel zstd
 // frames, written to dst in order. Close flushes the tail and reports the first
 // error from any worker or from dst.
@@ -99,18 +111,13 @@ func newParZstd(dst io.Writer, workers int) *parZstd {
 	return p
 }
 
-// worker compresses whole chunks. Each holds its own encoder: the encoders are
-// single-shot EncodeAll users, so one per worker keeps their state private.
+// worker compresses whole chunks. Each holds an encoder recycled from zstdEncoderPool:
+// the encoders are single-shot EncodeAll users, so holding one per worker keeps their
+// state private during execution.
 func (p *parZstd) worker() {
 	defer p.wg.Done()
-	enc, err := zstd.NewWriter(nil,
-		zstd.WithEncoderLevel(zstd.SpeedFastest),
-		zstd.WithEncoderConcurrency(1))
-	if err != nil {
-		// NewWriter only fails on bad options, which are compile-time constants here.
-		panic(err)
-	}
-	defer enc.Close()
+	enc := zstdEncoderPool.Get().(*zstd.Encoder)
+	defer zstdEncoderPool.Put(enc)
 	for j := range p.jobs {
 		outBuf := parZstdOutPool.Get().([]byte)
 		j.out <- enc.EncodeAll(j.buf, outBuf[:0])

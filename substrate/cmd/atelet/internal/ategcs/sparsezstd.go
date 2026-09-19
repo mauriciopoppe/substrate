@@ -60,6 +60,12 @@ const sparseEndOffset int64 = -1
 // compress from "scan the whole logical image" (e.g. 2GiB) to "scan the resident
 // set" (e.g. ~150MiB). Returns the logical size and the populated (pre-compression)
 // byte count. All integers are little-endian.
+var sparseWriteCopyBufPool = sync.Pool{
+	New: func() any {
+		return make([]byte, 32*1024)
+	},
+}
+
 func writeSparseZstd(dst io.Writer, src *os.File) (logical, dataBytes int64, err error) {
 	fi, err := src.Stat()
 	if err != nil {
@@ -72,7 +78,9 @@ func writeSparseZstd(dst io.Writer, src *os.File) (logical, dataBytes int64, err
 	if _, err := bw.WriteString(sparseMagic); err != nil {
 		return 0, 0, err
 	}
-	if err := binary.Write(bw, binary.LittleEndian, sparseVersion); err != nil {
+	var verBuf [4]byte
+	binary.LittleEndian.PutUint32(verBuf[:], sparseVersion)
+	if _, err := bw.Write(verBuf[:]); err != nil {
 		return 0, 0, err
 	}
 	if err := bw.Flush(); err != nil {
@@ -86,10 +94,16 @@ func writeSparseZstd(dst io.Writer, src *os.File) (logical, dataBytes int64, err
 		zw.Close()
 		return 0, 0, e
 	}
-	if err := binary.Write(zw, binary.LittleEndian, size); err != nil {
+	var hdr [16]byte
+	binary.LittleEndian.PutUint64(hdr[:8], uint64(size))
+	if _, err := zw.Write(hdr[:8]); err != nil {
 		return fail(err)
 	}
 
+	copyBuf := sparseWriteCopyBufPool.Get().([]byte)
+	defer sparseWriteCopyBufPool.Put(copyBuf)
+
+	lr := &io.LimitedReader{R: src}
 	fd := int(src.Fd())
 	off := int64(0)
 	for off < size {
@@ -105,23 +119,28 @@ func writeSparseZstd(dst io.Writer, src *os.File) (logical, dataBytes int64, err
 			return fail(fmt.Errorf("SEEK_HOLE: %w", serr))
 		}
 		length := de - ds
-		if err := binary.Write(zw, binary.LittleEndian, ds); err != nil {
-			return fail(err)
-		}
-		if err := binary.Write(zw, binary.LittleEndian, length); err != nil {
+		binary.LittleEndian.PutUint64(hdr[0:8], uint64(ds))
+		binary.LittleEndian.PutUint64(hdr[8:16], uint64(length))
+		if _, err := zw.Write(hdr[:]); err != nil {
 			return fail(err)
 		}
 		if _, err := src.Seek(ds, io.SeekStart); err != nil {
 			return fail(err)
 		}
-		n, cerr := io.CopyN(zw, src, length)
+		lr.N = length
+		n, cerr := io.CopyBuffer(zw, lr, copyBuf)
 		dataBytes += n
 		if cerr != nil {
 			return fail(fmt.Errorf("reading extent @%d+%d: %w", ds, length, cerr))
 		}
+		if n < length {
+			return fail(fmt.Errorf("reading extent @%d+%d: unexpected EOF (%d < %d)", ds, length, n, length))
+		}
 		off = de
 	}
-	if err := binary.Write(zw, binary.LittleEndian, sparseEndOffset); err != nil {
+	end := sparseEndOffset
+	binary.LittleEndian.PutUint64(hdr[:8], uint64(end))
+	if _, err := zw.Write(hdr[:8]); err != nil {
 		return fail(err)
 	}
 	if err := zw.Close(); err != nil {
