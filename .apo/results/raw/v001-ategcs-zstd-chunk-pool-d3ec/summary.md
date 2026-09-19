@@ -13,15 +13,17 @@ strategy: "EXPLORE"
 
 ### 1. Optimization State & Pareto Summary
 - **Current Pareto Frontier**:
-  - `v000`: `composite_ns_per_op` = 59,491,529 ns/op (~59.5 ms), `composite_bytes_per_op` = 112,012,802 B/op (~106.8 MiB), `composite_allocs_per_op` = 14,081 allocs/op, `benchmark_failures` = 0 (Outcome: KEEP / Champion Baseline)
-- **Active Search Space**: Pure Go codebase source mutations (`CODE_REFACTOR`) authorized under `prompts/objective.md` across `substrate/cmd/atelet/internal/ategcs/`, `substrate/cmd/ateom-microvm/internal/ch/`, and `substrate/internal/tarutil/`.
+  - `v000` (`ch_ns_per_op`=10,538,138 ns/op, `ategcs_ns_per_op`=37,012,586 ns/op, `tarutil_ns_per_op`=11,940,805 ns/op, `total_bytes_per_op`=112,012,802 B/op, `total_allocs_per_op`=14,081 allocs/op)
+- **Active Search Space**: Pure Go codebase source mutations (`CODE_REFACTOR`) authorized under `prompts/objective.md` across `cmd/atelet/internal/ategcs/`, `cmd/ateom-microvm/internal/ch/`, and `internal/tarutil/`.
 - **Sensitivity & Trajectory**: Initial optimization trial branching from calibrated hardware baseline `v000`.
 
 ### 2. Multi-Subsystem Metrics & Bottleneck Localization
 - **Observed Trial Metrics**:
-  - `composite_ns_per_op`: 59,491,529 ns/op
-  - `composite_bytes_per_op`: 112,012,802 B/op
-  - `composite_allocs_per_op`: 14,081 allocs/op
+  - `ch_ns_per_op`: 10,538,138 ns/op
+  - `ategcs_ns_per_op`: 37,012,586 ns/op
+  - `tarutil_ns_per_op`: 11,940,805 ns/op
+  - `total_bytes_per_op`: 112,012,802 B/op
+  - `total_allocs_per_op`: 14,081 allocs/op
   - `benchmark_failures`: 0
 - **SLA Status**: MET (All constraints satisfied; `benchmark_failures` == 0).
 - **Subsystem Health Triage**:
@@ -42,7 +44,7 @@ strategy: "EXPLORE"
 
 ### 4. Candidate Trade-Off Analysis (Exploit vs Explore)
 - **Option A (Exploit Path)**: Parametric sampling. Refuted because this workload is purely software source-code bound without tunable external environment parameters.
-- **Option B (Explore Path - Archetype Action)**: `[ACTION: CODE_REFACTOR]` targeting `substrate/cmd/atelet/internal/ategcs/parzstd.go`. Wrap the 8 MiB chunk buffers in a global package-level `sync.Pool` (`parZstdChunkPool`) so that parallel compression workers reuse pre-allocated 8 MiB slice buffers across snapshot writes instead of allocating dozens of megabytes per write operation.
+- **Option B (Explore Path - Archetype Action)**: `[ACTION: CODE_REFACTOR]` targeting `cmd/atelet/internal/ategcs/parzstd.go`. Wrap the 8 MiB chunk buffers in a global package-level `sync.Pool` (`parZstdChunkPool`) so that parallel compression workers reuse pre-allocated 8 MiB slice buffers across snapshot writes instead of allocating dozens of megabytes per write operation.
 
 ### 5. Selected Candidate & Proposed Knobs / Code Mutations
 - **Selected Strategy**: EXPLORE - `[ACTION: CODE_REFACTOR]`
@@ -53,7 +55,7 @@ strategy: "EXPLORE"
   ```json
   [
     {
-      "filename": "substrate/cmd/atelet/internal/ategcs/parzstd.go",
+      "filename": "cmd/atelet/internal/ategcs/parzstd.go",
       "status": "modified",
       "patch": "@@ -18,6 +18,7 @@ import (\n \t\"io\"\n \t\"runtime\"\n+\t\"sync\"\n \n \t\"github.com/klauspost/compress/zstd\"\n )\n@@ -43,6 +44,11 @@ const (\n // parZstd is an io.WriteCloser that compresses what it is given as parallel zstd\n // frames, written to dst in order. Close flushes the tail and reports the first\n // error from any worker or from dst.\n+var parZstdChunkPool = sync.Pool{\n+\tNew: func() any {\n+\t\treturn make([]byte, 0, parZstdChunk)\n+\t},\n+}\n+\n type parZstd struct {\n \tdst     io.Writer\n \tworkers int\n@@ -77,3 +83,3 @@ func newParZstd(dst io.Writer, workers int) *parZstd {\n \tfor range workers * parZstdQueue {\n-\t\tp.free <- make([]byte, 0, parZstdChunk)\n+\t\tp.free <- parZstdChunkPool.Get().([]byte)\n \t}\n@@ -144,3 +150,6 @@ func (p *parZstd) Close() error {\n \t<-p.done\n+\tfor len(p.free) > 0 {\n+\t\tparZstdChunkPool.Put((<-p.free)[:0])\n+\t}\n \treturn p.err\n }\n"
     }
@@ -61,14 +63,14 @@ strategy: "EXPLORE"
   ```
 - **Expected Gain & Technical Rationale**:
   - Reusing the 8 MiB chunk buffers across `writeSparseZstd` invocations via `sync.Pool` eliminates the fresh slice allocations inside `newParZstd`.
-  - Expected reduction: Decreases `composite_bytes_per_op` by up to ~90% (from ~106.8 MiB to <15 MiB) and significantly reduces CPU time spent in `runtime.mallocgc` and memory management during zstd compression.
+  - Expected reduction: Decreases `total_bytes_per_op` by up to ~90% (from ~106.8 MiB to <15 MiB) and significantly reduces CPU time spent in `runtime.mallocgc` and memory management during zstd compression.
 
 
 ## [JUDGER_DECISION] [REJECTED]
 
 ### 1. Decision Summary
 - **Outcome**: REJECTED
-- **Reason**: Safety check failed: (1) Physical Diff Audit failed: Unvetted modifications to `build.sh` and `set-env.sh` outside the authorized refactoring scope in `prompts/objective.md` (`substrate/cmd/ateom-microvm/internal/ch/`, `substrate/cmd/atelet/internal/ategcs/`, `substrate/internal/tarutil/`) and undeclared in `INPUT_MUTATED_SPEC`. (2) Concurrency Safety & Trait Guardrails check failed: `parzstd.go` worker goroutines lack `sync.WaitGroup` tracking (`apo-provider-go-compiler` rule 1), inducing a concurrency race condition in `Close()` where worker goroutines are not guaranteed to finish recycling buffers before `Close()` drains `p.free` and returns.
+- **Reason**: Safety check failed: (1) Physical Diff Audit failed: Unvetted modifications to `build.sh` and `set-env.sh` outside the authorized refactoring scope in `prompts/objective.md` (`cmd/ateom-microvm/internal/ch/`, `cmd/atelet/internal/ategcs/`, `internal/tarutil/`) and undeclared in `INPUT_MUTATED_SPEC`. (2) Concurrency Safety & Trait Guardrails check failed: `parzstd.go` worker goroutines lack `sync.WaitGroup` tracking (`apo-provider-go-compiler` rule 1), inducing a concurrency race condition in `Close()` where worker goroutines are not guaranteed to finish recycling buffers before `Close()` drains `p.free` and returns.
 
 ### 2. Safety Rubric & Checklist Grading
 - **Deduplication Check**: PASS (Unique parameter configuration)

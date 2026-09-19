@@ -22,17 +22,20 @@ strategy: "BASELINE"
 
 ### Comparative Benchmark Summary
 
-| Trial ID | Hyperparameter / Mutation Summary | Target Composite Latency | Composite Heap Allocated | Composite Allocations | Benchmark Failures | Outcome |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `v000` | Baseline upstream Go codebase | 59,491,529 ns/op (~59.5 ms) | 112,012,802 B/op (~106.8 MiB) | 14,081 allocs/op | 0 | **KEEP** (Champion Baseline) |
+| Trial ID | Hyperparameter / Mutation Summary | CH Latency (ns/op) | ATEGCS Latency (ns/op) | TarUtil Latency (ns/op) | Heap Volume (B/op) | Heap Allocs (allocs/op) | SLA Status | Outcome |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `v000` | Baseline upstream Go codebase | 10,538,138 ns/op | 37,012,586 ns/op | 11,940,805 ns/op | 112,012,802 B/op | 14,081 allocs/op | PASS | **KEEP** (Champion Baseline) |
+
 
 ### Subsystem Telemetry & Dynamic Trait Evidence
 
 #### Primary Measured Performance Metrics
-- **Composite CPU Latency (`composite_ns_per_op`)**: 59,491,529 ns/op (Median of 3 iterations: iter_1=60.3ms, iter_2=58.3ms, iter_3=59.5ms)
-- **Composite Heap Allocated (`composite_bytes_per_op`)**: 112,012,802 B/op (~106.8 MiB)
-- **Composite Allocations (`composite_allocs_per_op`)**: 14,081 allocs/op
-- **Benchmark Failures**: 0
+- CH CPU Latency (`ch_ns_per_op`): 10,538,138 ns/op
+- ATEGCS CPU Latency (`ategcs_ns_per_op`): 37,012,586 ns/op
+- TarUtil CPU Latency (`tarutil_ns_per_op`): 11,940,805 ns/op
+- Total Heap Allocation Volume (`total_bytes_per_op`): 112,012,802 B/op
+- Total Heap Object Allocations (`total_allocs_per_op`): 14,081 allocs/op
+- Benchmark Failures (`benchmark_failures`): 0
 
 #### Detailed Hotpath Breakdown (Median Run: Iteration 3)
 
@@ -46,8 +49,8 @@ strategy: "BASELINE"
 | `tarutil` | `BenchmarkCreate` | 3,442,072 | 327,227 | 4,301 | Tar header creation, file walk, and xattr read loop |
 
 ### Summary & Recommendations
-- **Outcome**: **KEEP** — Established as the active champion baseline across the Pareto frontier.
+- **Outcome**: **KEEP**  -  Established as the active champion baseline across the Pareto frontier.
 - **Top Optimization Vectors for Future Trials**:
   1. `BenchmarkWriteSparseZstd`: Emits 92.5% of total heap bytes (103.6 MiB / 112.0 MiB). Buffer pooling with `sync.Pool` for zstd encoder chunk buffers can dramatically reduce garbage collection pressure.
   2. `BenchmarkExtract`: Emits 67.8% of total allocations (9,541 / 14,081). Reusing path buffers and avoiding per-file header heap escapes will significantly cut alloc counts.
-  3. `BenchmarkReadSparseZstd` & `BenchmarkWriteSparseZstd`: Account for ~62% of composite CPU latency (37.0 ms / 59.5 ms). Tuning concurrency and dictionary/window parameters will reduce CPU cycles.
+  3. `BenchmarkReadSparseZstd` & `BenchmarkWriteSparseZstd`: Account for ~62% of total CPU latency (37.0 ms / 59.5 ms). Tuning concurrency and dictionary/window parameters will reduce CPU cycles.

@@ -17,7 +17,7 @@ strategy: "EXPLORE"
 - **Sensitivity & Trajectory**: `v022-ch-3c41` optimized the `ch` subsystem and reduced CPU and memory bounds. Extracting pax headers is identified as the next hot path for allocation.
 
 ### 2. Multi-Subsystem Metrics & Bottleneck Localization
-- **Observed Trial Metrics**: composite_ns_per_op=43,346,639, composite_allocs_per_op=13,184 (from parent trial v022-ch-3c41)
+- **Observed Trial Metrics**: CPU latencies (ch, ategcs, tarutil)=43,346,639, total_allocs_per_op=13,184 (from parent trial v022-ch-3c41)
 - **SLA Status**: MET
 - **Subsystem Health Triage**: `tarutil` subsystem overlay extraction (`BenchmarkExtract`) performs 9,141 allocs/op, primarily in string splits, buffer allocations, and maps within `restoreOverlayXattrs`.
 - **Active Trait Providers Loaded**: apo-provider-go-compiler
@@ -37,12 +37,12 @@ strategy: "EXPLORE"
 - **Selected Strategy**: EXPLORE - CODE_REFACTOR
 - **Mutation Type**: CODE_REFACTOR
 - **Hypothesis ID**: v030-tarutil-bb01
-- **Subsystem Focus**: substrate/internal/tarutil
+- **Subsystem Focus**: internal/tarutil
 - **Proposed Mutation Payload**:
 ```json
 [
   {
-    "filename": "substrate/internal/tarutil/tarutil.go",
+    "filename": "internal/tarutil/tarutil.go",
     "intent": "Optimize restoreOverlayXattrs to perform zero-allocation PAX header extraction: apply xattrs directly inside the hdr.PAXRecords loop to eliminate the intermediate map[string]string, lazily open the parent directory once when the first xattr is found, and use a sync.Pool for the byte buffers used for the /proc/self/fd/... path and the xattr value.",
     "target_symbols": ["restoreOverlayXattrs"]
   }

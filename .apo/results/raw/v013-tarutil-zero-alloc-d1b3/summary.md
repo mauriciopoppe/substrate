@@ -13,19 +13,21 @@ strategy: "EXPLORE"
 
 ### 1. Optimization State & Pareto Summary
 - **Current Pareto Frontier**:
-  - `v007-ch-sparse-buf-pool-3cb6`: `composite_ns_per_op` = 48,569,843 ns/op (-18.4%), `composite_bytes_per_op` = 26,561,940 B/op (-76.3%), `composite_allocs_per_op` = 14,080 allocs/op, `benchmark_failures` = 0 (Outcome: KEEP / Champion Baseline)
-- **Active Search Space**: Pure Go codebase source mutations (`CODE_REFACTOR`) authorized under `prompts/objective.md` across `substrate/cmd/ateom-microvm/internal/ch/`, `substrate/cmd/atelet/internal/ategcs/`, and `substrate/internal/tarutil/`.
+  - `v007-ch-sparse-buf-pool-3cb6`: `CPU latencies (ch, ategcs, tarutil)` = 48,569,843 ns/op (-18.4%), `total_bytes_per_op` = 26,561,940 B/op (-76.3%), `total_allocs_per_op` = 14,080 allocs/op, `benchmark_failures` = 0 (Outcome: KEEP / Champion Baseline)
+- **Active Search Space**: Pure Go codebase source mutations (`CODE_REFACTOR`) authorized under `prompts/objective.md` across `cmd/ateom-microvm/internal/ch/`, `cmd/atelet/internal/ategcs/`, and `internal/tarutil/`.
 - **Sensitivity & Trajectory**: Trials `v004` through `v007` explored Subsystem B (`ch`), which saturated gains in `ch/merge.go` buffer allocations. Per rotation directives in `prompts/objective.md`, following saturation of primary gains in `ch`, the search pivots to Subsystem C (`tarutil`), which is currently in state `UNEXPLORED`.
 
 ### 2. Multi-Subsystem Metrics & Bottleneck Localization
 - **Observed Trial Metrics**:
-  - `composite_ns_per_op`: 48,569,843 ns/op
-  - `composite_bytes_per_op`: 26,561,940 B/op
-  - `composite_allocs_per_op`: 14,080 allocs/op
+  - `ch_ns_per_op`: 9,580,991 ns/op
+  - `ategcs_ns_per_op`: 28,240,497 ns/op
+  - `tarutil_ns_per_op`: 10,748,355 ns/op
+  - `total_bytes_per_op`: 26,561,940 B/op
+  - `total_allocs_per_op`: 14,080 allocs/op
   - `benchmark_failures`: 0
 - **SLA Status**: MET (All constraints satisfied; `benchmark_failures` == 0).
 - **Subsystem Health Triage**:
-  - In Subsystem C (`substrate/internal/tarutil`), `BenchmarkExtract` currently accounts for 9,541 allocs/op (67.8% of all suite allocations) and 7.33 ms CPU time per `v007`'s Living report.
+  - In Subsystem C (`internal/tarutil`), `BenchmarkExtract` currently accounts for 9,541 allocs/op (67.8% of all suite allocations) and 7.33 ms CPU time per `v007`'s Living report.
   - Allocations in Subsystem C are dominated by `os.splitPathInRoot` via standard library methods, strings allocation returning from Header extract (e.g. `strings.Split`, map creations), and `copyPooled()` interface boxing overhead.
 - **Active Trait Providers Loaded**:
   - `apo-provider-go-compiler`: Pattern 2 (`sync.Pool` Struct & Buffer Arena Recycling), Judger Concurrency & Safety Rubric.
@@ -42,19 +44,19 @@ strategy: "EXPLORE"
 
 ### 4. Candidate Trade-Off Analysis (Exploit vs Explore)
 - **Option A (Exploit Path)**: Parametric sampling. Refuted because this Go microbenchmark workspace has no external tunable environment variables.
-- **Option B (Explore Path - Archetype Action)**: `[ACTION: SUBSYSTEM_PIVOT]` & `[ACTION: CODE_REFACTOR]` targeting `substrate/internal/tarutil/tarutil.go`. Implements zero-allocation header extraction optimizations (`restoreOverlayXattrs`, `readOverlayXattrs`) and avoids interface parameter boxing in `copyPooled` by pooling a custom `copyWrapper` struct.
+- **Option B (Explore Path - Archetype Action)**: `[ACTION: SUBSYSTEM_PIVOT]` & `[ACTION: CODE_REFACTOR]` targeting `internal/tarutil/tarutil.go`. Implements zero-allocation header extraction optimizations (`restoreOverlayXattrs`, `readOverlayXattrs`) and avoids interface parameter boxing in `copyPooled` by pooling a custom `copyWrapper` struct.
 
 ### 5. Selected Candidate & Proposed Knobs / Code Mutations
 - **Selected Strategy**: EXPLORE - `[ACTION: SUBSYSTEM_PIVOT]` & `[ACTION: CODE_REFACTOR]`
 - **Mutation Type**: `CODE_REFACTOR`
 - **Hypothesis ID**: `v013-tarutil-zero-alloc-d1b3`
-- **Subsystem Focus**: `substrate/internal/tarutil` (Rootfs Archive Streaming)
+- **Subsystem Focus**: `internal/tarutil` (Rootfs Archive Streaming)
 - **Proposed Mutation Payload**: payload attached in orchestrator queue registration.
 - **Expected Gain & Technical Rationale**:
   - Eliminates the repeated 2-allocation interface boxing penalty in `copyPooled` via `copyWrapperPool`.
   - Replaces heavy string allocations with direct byte processing where available during `readOverlayXattrs`.
   - Replaces `fmt.Sprintf` with zero-allocation `strconv.Itoa` during `restoreOverlayXattrs` resolving.
-  - Overall expect up to 400 allocation drop (-4% in composite) for `BenchmarkExtract` per operation.
+  - Overall expect up to 400 allocation drop (-4% in total allocs) for `BenchmarkExtract` per operation.
 
 ## [JUDGER_DECISION] [APPROVED]
 
@@ -73,4 +75,4 @@ strategy: "EXPLORE"
 ### 3. Vetted Parameter Specifications
 | Knob Name | Approved Value | Target Manifest | Domain Trait |
 | :--- | :--- | :--- | :--- |
-| `tarutil.go (zero-alloc xattrs & copyWrapper pool)` | `CODE_REFACTOR` | `substrate/internal/tarutil/tarutil.go` | `apo-provider-go-compiler` |
+| `tarutil.go (zero-alloc xattrs & copyWrapper pool)` | `CODE_REFACTOR` | `internal/tarutil/tarutil.go` | `apo-provider-go-compiler` |

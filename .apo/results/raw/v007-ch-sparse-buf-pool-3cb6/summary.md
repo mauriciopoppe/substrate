@@ -13,15 +13,17 @@ strategy: "EXPLORE"
 
 ### 1. Optimization State & Pareto Summary
 - **Current Pareto Frontier**:
-  - `v003-ategcs-zstd-chunk-pool-a8d7`: `composite_ns_per_op` = 49,489,457 ns/op (-16.8%), `composite_bytes_per_op` = 28,807,617 B/op (-74.3%), `composite_allocs_per_op` = 14,085 allocs/op, `benchmark_failures` = 0 (Outcome: KEEP / Champion Baseline)
-- **Active Search Space**: Pure Go codebase source mutations (`CODE_REFACTOR`) authorized under `prompts/objective.md` across `substrate/cmd/ateom-microvm/internal/ch/`, `substrate/cmd/atelet/internal/ategcs/`, and `substrate/internal/tarutil/`.
+  - `v003-ategcs-zstd-chunk-pool-a8d7`: `CPU latencies (ch, ategcs, tarutil)` = 49,489,457 ns/op (-16.8%), `total_bytes_per_op` = 28,807,617 B/op (-74.3%), `total_allocs_per_op` = 14,085 allocs/op, `benchmark_failures` = 0 (Outcome: KEEP / Champion Baseline)
+- **Active Search Space**: Pure Go codebase source mutations (`CODE_REFACTOR`) authorized under `prompts/objective.md` across `cmd/ateom-microvm/internal/ch/`, `cmd/atelet/internal/ategcs/`, and `internal/tarutil/`.
 - **Sensitivity & Trajectory**: Trials `v001` through `v003` explored Subsystem A (`ategcs`), achieving a massive 74.3% reduction in heap allocation volume via `parzstd.go` buffer pooling. Per rotation directives in `prompts/objective.md`, following saturation of primary gains in `ategcs`, the search pivots to Subsystem B (`ch`), which is currently in state `UNEXPLORED`.
 
 ### 2. Multi-Subsystem Metrics & Bottleneck Localization
 - **Observed Trial Metrics**:
-  - `composite_ns_per_op`: 49,489,457 ns/op
-  - `composite_bytes_per_op`: 28,807,617 B/op (~27.5 MiB)
-  - `composite_allocs_per_op`: 14,085 allocs/op
+  - `ch_ns_per_op`: 10,257,674 ns/op
+  - `ategcs_ns_per_op`: 28,690,509 ns/op
+  - `tarutil_ns_per_op`: 10,541,274 ns/op
+  - `total_bytes_per_op`: 28,807,617 B/op
+  - `total_allocs_per_op`: 14,085 allocs/op
   - `benchmark_failures`: 0
 - **SLA Status**: MET (All constraints satisfied; `benchmark_failures` == 0).
 - **Subsystem Health Triage**:
@@ -44,7 +46,7 @@ strategy: "EXPLORE"
 
 ### 4. Candidate Trade-Off Analysis (Exploit vs Explore)
 - **Option A (Exploit Path)**: Parametric sampling. Refuted because this Go microbenchmark workspace has no external tunable environment variables.
-- **Option B (Explore Path - Archetype Action)**: `[ACTION: SUBSYSTEM_PIVOT]` & `[ACTION: CODE_REFACTOR]` targeting `substrate/cmd/ateom-microvm/internal/ch/merge.go`. Introduces package-level `sparseCopyBufPool` (`sync.Pool`) for the 1 MiB scratch buffer in `copySparseRegions()`, eliminating 2.09 MiB of heap churn per operation across sparse overlay merging and kernel sparse region copying.
+- **Option B (Explore Path - Archetype Action)**: `[ACTION: SUBSYSTEM_PIVOT]` & `[ACTION: CODE_REFACTOR]` targeting `cmd/ateom-microvm/internal/ch/merge.go`. Introduces package-level `sparseCopyBufPool` (`sync.Pool`) for the 1 MiB scratch buffer in `copySparseRegions()`, eliminating 2.09 MiB of heap churn per operation across sparse overlay merging and kernel sparse region copying.
 
 ### 5. Selected Candidate & Proposed Knobs / Code Mutations
 - **Selected Strategy**: EXPLORE - `[ACTION: SUBSYSTEM_PIVOT]` & `[ACTION: CODE_REFACTOR]`
@@ -55,26 +57,26 @@ strategy: "EXPLORE"
   ```json
   [
     {
-      "filename": "substrate/cmd/ateom-microvm/internal/ch/merge.go",
+      "filename": "cmd/ateom-microvm/internal/ch/merge.go",
       "status": "modified",
-      "patch": "--- a/substrate/cmd/ateom-microvm/internal/ch/merge.go\n+++ b/substrate/cmd/ateom-microvm/internal/ch/merge.go\n@@ -24,9 +24,19 @@\n \t\"io\"\n \t\"os\"\n \t\"os/exec\"\n+\t\"sync\"\n \n \t\"github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/reaper\"\n \t\"golang.org/x/sys/unix\"\n )\n \n+const sparseChunkSize = 1 << 20\n+\n+var sparseCopyBufPool = sync.Pool{\n+\tNew: func() any {\n+\t\tb := make([]byte, sparseChunkSize)\n+\t\treturn &b\n+\t},\n+}\n+\n // MergeSparseOverlay reconstructs a COMPLETE memory snapshot from an OnDemand\n@@ -181,7 +191,9 @@\n \t}\n \tsize := si.Size()\n \tsfd := int(src.Fd())\n-\tbuf := make([]byte, 1<<20)\n+\tbp := sparseCopyBufPool.Get().(*[]byte)\n+\tdefer sparseCopyBufPool.Put(bp)\n+\tbuf := *bp\n \toff := int64(0)\n \tfor off < size {\n"
+      "patch": "--- a/cmd/ateom-microvm/internal/ch/merge.go\n+++ b/cmd/ateom-microvm/internal/ch/merge.go\n@@ -24,9 +24,19 @@\n \t\"io\"\n \t\"os\"\n \t\"os/exec\"\n+\t\"sync\"\n \n \t\"github.com/agent-substrate/cmd/ateom-microvm/internal/reaper\"\n \t\"golang.org/x/sys/unix\"\n )\n \n+const sparseChunkSize = 1 << 20\n+\n+var sparseCopyBufPool = sync.Pool{\n+\tNew: func() any {\n+\t\tb := make([]byte, sparseChunkSize)\n+\t\treturn &b\n+\t},\n+}\n+\n // MergeSparseOverlay reconstructs a COMPLETE memory snapshot from an OnDemand\n@@ -181,7 +191,9 @@\n \t}\n \tsize := si.Size()\n \tsfd := int(src.Fd())\n-\tbuf := make([]byte, 1<<20)\n+\tbp := sparseCopyBufPool.Get().(*[]byte)\n+\tdefer sparseCopyBufPool.Put(bp)\n+\tbuf := *bp\n \toff := int64(0)\n \tfor off < size {\n"
     }
   ]
   ```
 - **Expected Gain & Technical Rationale**:
   - Eliminates the repeated 1 MiB heap buffer allocation on every invocation of `copySparseRegions()`.
-  - Decreases composite heap allocation volume (`composite_bytes_per_op`) by ~2.09 MiB/op (~7.3% reduction on top of `v003`) and reduces GC pressure in `runtime.mallocgc` during sparse overlay merges.
+  - Decreases total heap allocation volume (`total_bytes_per_op`) by ~2.09 MiB/op (~7.3% reduction on top of `v003`) and reduces GC pressure in `runtime.mallocgc` during sparse overlay merges.
 
 ## [JUDGER_DECISION] [APPROVED]
 
 ### 1. Decision Summary
 - **Outcome**: VALIDATED
 - **Strategy**: EXPLORE
-- **Rationale**: Validated pure Go code refactor in `substrate/cmd/ateom-microvm/internal/ch/merge.go`. Reuses 1 MiB scratch copy buffers via package-level `sync.Pool` (`sparseCopyBufPool`) with deterministic `defer Put(bp)`, eliminating ~2.09 MiB of heap allocations per iteration across sparse overlay merging and kernel sparse region copying hotpaths while preserving data integrity and thread safety.
+- **Rationale**: Validated pure Go code refactor in `cmd/ateom-microvm/internal/ch/merge.go`. Reuses 1 MiB scratch copy buffers via package-level `sync.Pool` (`sparseCopyBufPool`) with deterministic `defer Put(bp)`, eliminating ~2.09 MiB of heap allocations per iteration across sparse overlay merging and kernel sparse region copying hotpaths while preserving data integrity and thread safety.
 
 ### 2. Safety Rubric & Checklist Grading
 - **Deduplication Check**: PASS (Unique mutation building on top of Champion `v003-ategcs-zstd-chunk-pool-a8d7`)
-- **Physical Diff Audit**: PASS (Surgically scoped strictly to authorized component `substrate/cmd/ateom-microvm/internal/ch/merge.go`; no unauthorized scripts or config modified)
+- **Physical Diff Audit**: PASS (Surgically scoped strictly to authorized component `cmd/ateom-microvm/internal/ch/merge.go`; no unauthorized scripts or config modified)
 - **Domain Trait & Concurrency Check**: PASS (`apo-provider-go-compiler`: Thread-safe `sync.Pool` usage, slice buffer capacity preserved, zero goroutine leaks, zero unprotected mutable global state)
 - **Management Cores Check**: PASS (Microbenchmark pod runs with Guaranteed QoS; node management cores unperturbed)
 - **Memory Headroom & OOM Guard**: PASS (1 MiB heap allocation eliminated per call, reducing GC mark worker CPU overhead)
@@ -83,24 +85,28 @@ strategy: "EXPLORE"
 ### 3. Vetted Parameter Specifications
 | Knob Name | Approved Value | Target Manifest | Domain Trait |
 | :--- | :--- | :--- | :--- |
-| `ch/merge.go (sparseCopyBufPool)` | `CODE_REFACTOR` | `substrate/cmd/ateom-microvm/internal/ch/merge.go` | `apo-provider-go-compiler` |
+| `ch/merge.go (sparseCopyBufPool)` | `CODE_REFACTOR` | `cmd/ateom-microvm/internal/ch/merge.go` | `apo-provider-go-compiler` |
 
 ## [TRIAL_OUTCOME] - Benchmark Results & Subsystem Analysis
 
 ### Comparative Benchmark Summary
 
-| Trial ID | Hyperparameter / Mutation Summary | Composite CPU Latency (ns/op) | Composite Heap Volume (B/op) | Composite Heap Allocs (allocs/op) | SLA Status | Outcome / Delta vs Baseline |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `v000` | Baseline upstream Go codebase | 59,491,529 ns/op | 112,012,802 B/op | 14,081 allocs/op | PASS | Baseline Reference |
-| `v003-ategcs-zstd-chunk-pool-a8d7` | `parzstd.go (sync.Pool Chunk & Out Buffers)` | 49,489,457 ns/op | 28,807,617 B/op | 14,085 allocs/op | PASS | **KEEP (-16.8% CPU ns, -74.3% Heap bytes)** |
-| `v007-ch-sparse-buf-pool-3cb6` | `ch/merge.go (sparseCopyBufPool 1MiB Buffer Recycling)` | 48,569,843 ns/op | 26,561,940 B/op | 14,080 allocs/op | PASS | **KEEP (-18.4% CPU ns, -76.3% Heap bytes vs Baseline; -7.8% Heap bytes vs Champion)** |
+| Trial ID | Hyperparameter / Mutation Summary | CH Latency (ns/op) | ATEGCS Latency (ns/op) | TarUtil Latency (ns/op) | Heap Volume (B/op) | Heap Allocs (allocs/op) | SLA Status | Outcome |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `v000` | Baseline upstream Go codebase | 10,538,138 ns/op | 37,012,586 ns/op | 11,940,805 ns/op | 112,012,802 B/op | 14,081 allocs/op | PASS | Baseline Reference |
+| `v003-ategcs-zstd-chunk-pool-a8d7` | `parzstd.go (sync.Pool Chunk & Out Buffers)` | 10,257,674 ns/op | 28,690,509 ns/op | 10,541,274 ns/op | 28,807,617 B/op | 14,085 allocs/op | PASS | **KEEP (-16.8% CPU ns, -74.3% Heap bytes)** |
+| `v007-ch-sparse-buf-pool-3cb6` | `ch/merge.go (sparseCopyBufPool 1MiB Buffer Recycling)` | 9,580,991 ns/op | 28,240,497 ns/op | 10,748,355 ns/op | 26,561,940 B/op | 14,080 allocs/op | PASS | **KEEP (-18.4% CPU ns, -76.3% Heap bytes vs Baseline; -7.8% Heap bytes vs Champion)** |
+
 
 ### Subsystem Telemetry & Dynamic Trait Evidence
 
 #### Primary Measured Performance Metrics
-- Composite CPU Execution Time (`composite_ns_per_op`): 48,569,843 ns/op (~48.57 ms/op, Median of 3 iterations: iter_1=48,803,610, iter_2=47,656,100, iter_3=48,569,843, Delta vs Baseline: -18.36%, Delta vs Champion v003: -1.86%)
-- Composite Heap Allocation Volume (`composite_bytes_per_op`): 26,561,940 B/op (~25.33 MiB/op, Median: 26,561,940, Min: 26,561,940, Delta vs Baseline: -76.29% [-85.45 MiB/op], Delta vs Champion v003: -7.80% [-2.25 MiB/op / -2,245,677 B/op])
-- Composite Heap Object Allocations (`composite_allocs_per_op`): 14,080 allocs/op (Median: 14,080, Delta vs Baseline: -0.007%, Delta vs Champion v003: -0.035%)
+- CH CPU Latency (`ch_ns_per_op`): 9,580,991 ns/op
+- ATEGCS CPU Latency (`ategcs_ns_per_op`): 28,240,497 ns/op
+- TarUtil CPU Latency (`tarutil_ns_per_op`): 10,748,355 ns/op
+- Total Heap Allocation Volume (`total_bytes_per_op`): 26,561,940 B/op
+- Total Heap Object Allocations (`total_allocs_per_op`): 14,080 allocs/op
+- Benchmark Failures (`benchmark_failures`): 0
 - Subsystem B Hotpath Breakdown (`cmd/ateom-microvm/internal/ch/merge.go`):
   - `BenchmarkMergeDeltaIntoBase`:
     - CPU Latency: 2,108,617 ns/op (vs 2,528,923 ns/op in v003 / baseline, -16.62%)
@@ -123,17 +129,17 @@ strategy: "EXPLORE"
 ##### Trait Evidence: apo-provider-go-compiler
 
 ###### sync.Pool 1MiB Scratch Buffer Recycling in Subsystem B
-- Pattern Implementation: Applied Pattern 2 (`sync.Pool` Struct & Buffer Arena Recycling) to `substrate/cmd/ateom-microvm/internal/ch/merge.go`.
+- Pattern Implementation: Applied Pattern 2 (`sync.Pool` Struct & Buffer Arena Recycling) to `cmd/ateom-microvm/internal/ch/merge.go`.
 - Memory Elimination: Replaced fresh heap allocations (`make([]byte, 1<<20)`) in `copySparseRegions()` with a package-level pointer-backed pool `sparseCopyBufPool`.
-- Heap Volume Impact: Both `BenchmarkMergeDeltaIntoBase` (2.4 KiB vs 1.05 MiB) and `BenchmarkCopySparseRegions` (208 B vs 1.05 MiB) had their 1 MiB heap allocations eliminated per iteration, reducing composite heap allocation volume by 2.25 MiB/op (-7.80% reduction relative to champion `v003`).
-- CPU Latency Impact: Eliminating GC allocation pressure during sparse region copying reduced CPU execution time in `BenchmarkMergeDeltaIntoBase` by 16.62% and `BenchmarkCopySparseRegions` by 3.32%, bringing composite latency down to 48.57 ms/op.
+- Heap Volume Impact: Both `BenchmarkMergeDeltaIntoBase` (2.4 KiB vs 1.05 MiB) and `BenchmarkCopySparseRegions` (208 B vs 1.05 MiB) had their 1 MiB heap allocations eliminated per iteration, reducing total heap allocation volume by 2.25 MiB/op (-7.80% reduction relative to champion `v003`).
+- CPU Latency Impact: Eliminating GC allocation pressure during sparse region copying reduced CPU execution time in `BenchmarkMergeDeltaIntoBase` by 16.62% and `BenchmarkCopySparseRegions` by 3.32%, bringing aggregate latency down to 48.57 ms/op.
 
 ###### Pointer-backed sync.Pool Safety & Scope Hygiene
 - Clean Slice Retention: Used pointer to byte slice (`*[]byte`) in `sparseCopyBufPool` to prevent pool interface boxing allocations during `Get()` and `Put()`.
 - Scope Isolation: Reclaimed buffer deterministically via `defer sparseCopyBufPool.Put(bp)` within the localized scope of `copySparseRegions()`, guaranteeing no memory leaks or cross-goroutine pool corruption.
 
 ### Summary & Recommendations
-- **Outcome**: KEEP (Strict Pareto domination over champion `v003-ategcs-zstd-chunk-pool-a8d7`: -7.80% heap allocation volume [-2.25 MiB/op], -1.86% composite CPU runtime, with 0 benchmark failures).
+- **Outcome**: KEEP (Strict Pareto domination over champion `v003-ategcs-zstd-chunk-pool-a8d7`: -7.80% heap allocation volume [-2.25 MiB/op], -1.86% total CPU runtime, with 0 benchmark failures).
 - **Recommendations for Next Cycle**:
-  1. Subsystem C (`substrate/internal/tarutil`): `BenchmarkExtract` currently accounts for 9,541 allocs/op (67.8% of all suite allocations) and 7.33 ms CPU time. Explore zero-allocation header extraction and pooled tar reader buffers in `tarutil.go`.
-  2. Subsystem A (`substrate/cmd/atelet/internal/ategcs`): `BenchmarkReadSparseZstd` contributes 16.65 ms CPU time (34.3% of composite latency) and 5.53 MiB heap volume. Explore streaming decompression chunk pooling in `sparsezstd.go`.
+  1. Subsystem C (`internal/tarutil`): `BenchmarkExtract` currently accounts for 9,541 allocs/op (67.8% of all suite allocations) and 7.33 ms CPU time. Explore zero-allocation header extraction and pooled tar reader buffers in `tarutil.go`.
+  2. Subsystem A (`cmd/atelet/internal/ategcs`): `BenchmarkReadSparseZstd` contributes 16.65 ms CPU time (34.3% of aggregate latency) and 5.53 MiB heap volume. Explore streaming decompression chunk pooling in `sparsezstd.go`.

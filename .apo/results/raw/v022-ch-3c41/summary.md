@@ -17,7 +17,7 @@ strategy: "EXPLORE"
 - **Sensitivity & Trajectory**: Pool usage reduced allocations, but userspace I/O still consumes cycles
 
 ### 2. Multi-Subsystem Metrics & Bottleneck Localization
-- **Observed Trial Metrics**: composite_ns_per_op=47.4ms, composite_allocs_per_op=14066
+- **Observed Trial Metrics**: CPU latencies (ch, ategcs, tarutil)=47.4ms, total_allocs_per_op=14066
 - **SLA Status**: MET
 - **Subsystem Health Triage**: `ch` subsystem overlay merge operations are I/O bounds and userspace context switch heavy.
 - **Active Trait Providers Loaded**: apo-provider-go-compiler
@@ -42,7 +42,7 @@ strategy: "EXPLORE"
 ```json
 [
   {
-    "filename": "substrate/cmd/ateom-microvm/internal/ch/merge.go",
+    "filename": "cmd/ateom-microvm/internal/ch/merge.go",
     "intent": "Replace userspace io.ReadFull/Write loop in copySparseRegions with unix.CopyFileRange, removing sparseCopyBufPool and bypassing userspace memory completely for overlay copies.",
     "target_symbols": ["copySparseRegions", "sparseCopyBufPool"]
   }
@@ -68,24 +68,28 @@ strategy: "EXPLORE"
 ### 3. Vetted Parameter Specifications
 | Knob Name | Approved Value | Target Manifest | Domain Trait |
 | :--- | :--- | :--- | :--- |
-| `FEATURE_COPY_FILE_RANGE` | `true` | `substrate/cmd/ateom-microvm/internal/ch/merge.go` | `apo-provider-go-compiler` |
+| `FEATURE_COPY_FILE_RANGE` | `true` | `cmd/ateom-microvm/internal/ch/merge.go` | `apo-provider-go-compiler` |
 
 ## [TRIAL_OUTCOME] - Benchmark Results & Subsystem Analysis
 
 ### Comparative Benchmark Summary
 
-| Trial ID | Hyperparameter / Mutation Summary | Composite CPU Latency (ns/op) | Composite Heap Volume (B/op) | Composite Heap Allocs (allocs/op) | SLA Status | Outcome / Delta vs Baseline |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `v000` | Baseline upstream Go codebase | 59,491,529 ns/op | 112,012,802 B/op | 14,081 allocs/op | PASS | Baseline Reference |
-| `v017-ategcs-9228` | `sparsezstd.go (zstdDecoderPool Decoder Recycling)` | 47,416,250 ns/op | 22,959,102 B/op | 14,066 allocs/op | PASS | Parent Champion (-20.3% CPU ns, -79.5% Heap bytes vs Baseline) |
-| `v022-ch-3c41` | `ch/merge.go (in-kernel unix.CopyFileRange)` | 43,346,639 ns/op | 12,755,561 B/op | 13,184 allocs/op | PASS | **KEEP (-8.6% CPU ns vs Champion, -44.4% Heap bytes vs Champion, -27.1% CPU ns vs Baseline)** |
+| Trial ID | Hyperparameter / Mutation Summary | CH Latency (ns/op) | ATEGCS Latency (ns/op) | TarUtil Latency (ns/op) | Heap Volume (B/op) | Heap Allocs (allocs/op) | SLA Status | Outcome |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `v000` | Baseline upstream Go codebase | 10,538,138 ns/op | 37,012,586 ns/op | 11,940,805 ns/op | 112,012,802 B/op | 14,081 allocs/op | PASS | Baseline Reference |
+| `v017-ategcs-9228` | `sparsezstd.go (zstdDecoderPool Decoder Recycling)` | 9,291,442 ns/op | 27,171,348 ns/op | 10,953,460 ns/op | 22,959,102 B/op | 14,066 allocs/op | PASS | Parent Champion (-20.3% CPU ns, -79.5% Heap bytes vs Baseline) |
+| `v022-ch-3c41` | `ch/merge.go (in-kernel unix.CopyFileRange)` | 7,401,810 ns/op | 25,215,863 ns/op | 10,728,966 ns/op | 12,755,561 B/op | 13,184 allocs/op | PASS | **KEEP (-8.6% CPU ns vs Champion, -44.4% Heap bytes vs Champion, -27.1% CPU ns vs Baseline)** |
+
 
 ### Subsystem Telemetry & Dynamic Trait Evidence
 
 #### Primary Measured Performance Metrics
-- Composite CPU Execution Time (`composite_ns_per_op`): 43,346,639 ns/op (~43.35 ms/op, Median of 3 iterations: iter_1=43,346,639, iter_2=43,662,833, iter_3=42,944,330, Delta vs Baseline v000: -27.14%, Delta vs Parent Champion v017: -8.58%)
-- Composite Heap Allocation Volume (`composite_bytes_per_op`): 12,755,561 B/op (~12.16 MiB/op, Median: 12,755,561, Min: 9,185,475, Delta vs Baseline v000: -88.61% [-99.26 MiB/op], Delta vs Parent Champion v017: -44.44% [-10.20 MiB/op / -10,203,541 B/op])
-- Composite Heap Object Allocations (`composite_allocs_per_op`): 13,184 allocs/op (Median: 13,184, Delta vs Baseline v000: -6.37% [-897 allocs], Delta vs Parent Champion v017: -6.27% [-882 allocs])
+- CH CPU Latency (`ch_ns_per_op`): 7,401,810 ns/op
+- ATEGCS CPU Latency (`ategcs_ns_per_op`): 25,215,863 ns/op
+- TarUtil CPU Latency (`tarutil_ns_per_op`): 10,728,966 ns/op
+- Total Heap Allocation Volume (`total_bytes_per_op`): 12,755,561 B/op
+- Total Heap Object Allocations (`total_allocs_per_op`): 13,184 allocs/op
+- Benchmark Failures (`benchmark_failures`): 0
 - Subsystem B Hotpath Breakdown (`cmd/ateom-microvm/internal/ch/merge.go`):
   - `BenchmarkCopySparseRegions`:
     - CPU Latency: 5,658,781 ns/op (vs 7,198,219 ns/op in v017, -21.39%)
@@ -108,18 +112,18 @@ strategy: "EXPLORE"
 ##### Trait Evidence: apo-provider-go-compiler
 
 ###### unix.CopyFileRange Kernel Splicing in Subsystem B
-- Pattern Implementation: Applied Pattern 5 (Zero-Copy and In-Kernel I/O Splicing) to `substrate/cmd/ateom-microvm/internal/ch/merge.go`.
+- Pattern Implementation: Applied Pattern 5 (Zero-Copy and In-Kernel I/O Splicing) to `cmd/ateom-microvm/internal/ch/merge.go`.
 - Memory and Context Switch Elimination: Replaced userspace buffer pool reading/writing (`io.ReadFull` / `dst.Write` via `sparseCopyBufPool`) with direct kernel-space data copying using `unix.CopyFileRange`. Data is transferred directly between page caches inside the Linux kernel without allocating userspace memory buffers or performing repeated userspace-to-kernel boundary crossings.
-- Latency Impact: `BenchmarkCopySparseRegions` CPU latency dropped from 7.20 ms/op to 5.66 ms/op (-21.39%). In addition, `BenchmarkMergeDeltaIntoBase` dropped from 2.09 ms/op to 1.74 ms/op (-16.73%). Overall composite latency dropped from 47.42 ms/op to 43.35 ms/op (-8.58% vs parent champion; -27.14% vs baseline).
+- Latency Impact: `BenchmarkCopySparseRegions` CPU latency dropped from 7.20 ms/op to 5.66 ms/op (-21.39%). In addition, `BenchmarkMergeDeltaIntoBase` dropped from 2.09 ms/op to 1.74 ms/op (-16.73%). Overall aggregate latency dropped from 47.42 ms/op to 43.35 ms/op (-8.58% vs parent champion; -27.14% vs baseline).
 
 ###### CPU Hotspots and Kernel Syscall Profile
 - Syscall Transition Profile: In `cpu_ch.txt`, `internal/runtime/syscall/linux.Syscall6` accounts for 210ms (65.62% of flat time) during in-kernel block replication, confirming execution time is spent in kernel page-cache copies rather than userspace memory churn.
 - Concurrency Safety: Handled partial write loops for `unix.CopyFileRange` and ensured clean offset tracking without descriptor leakage.
 
 ### Summary & Recommendations
-- **Outcome**: KEEP (Strict Pareto domination: -8.58% composite CPU time [-4.07 ms/op], -44.44% heap allocation volume [-10.20 MiB/op], -882 heap allocations/op, with 0 benchmark failures).
+- **Outcome**: KEEP (Strict Pareto domination: -8.58% total CPU time [-4.07 ms/op], -44.44% heap allocation volume [-10.20 MiB/op], -882 heap allocations/op, with 0 benchmark failures).
 - **Modified Files**:
-  - `substrate/cmd/ateom-microvm/internal/ch/merge.go`
+  - `cmd/ateom-microvm/internal/ch/merge.go`
 - **Recommendations for Next Cycle**:
-  1. Subsystem C (`substrate/internal/tarutil`): `BenchmarkExtract` is now the dominant allocation hotspot, accounting for 9,141 allocs/op (69.3% of all suite allocations) and 7.11 ms CPU time. Follow up with zero-allocation directory extraction and PAX header parsing buffer pooling.
-  2. Subsystem A (`substrate/cmd/atelet/internal/ategcs`): `BenchmarkWriteSparseZstd` still contributes 10.89 MiB/op. Investigate further extent buffer pooling and writer recycling.
+  1. Subsystem C (`internal/tarutil`): `BenchmarkExtract` is now the dominant allocation hotspot, accounting for 9,141 allocs/op (69.3% of all suite allocations) and 7.11 ms CPU time. Follow up with zero-allocation directory extraction and PAX header parsing buffer pooling.
+  2. Subsystem A (`cmd/atelet/internal/ategcs`): `BenchmarkWriteSparseZstd` still contributes 10.89 MiB/op. Investigate further extent buffer pooling and writer recycling.

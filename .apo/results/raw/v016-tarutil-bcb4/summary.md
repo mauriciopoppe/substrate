@@ -13,7 +13,7 @@ strategy: "EXPLORE"
 
 ### 1. Optimization State & Pareto Summary
 - **Current Pareto Frontier**: `v007-ch-sparse-buf-pool-3cb6` and `v003-ategcs-zstd-chunk-pool-a8d7` (Outcome: KEEP / Champion Baselines)
-- **Active Search Space**: Pure Go codebase source mutations (`CODE_REFACTOR`) authorized across `substrate/internal/tarutil/`, `substrate/cmd/ateom-microvm/internal/ch/`, and `substrate/cmd/atelet/internal/ategcs/`.
+- **Active Search Space**: Pure Go codebase source mutations (`CODE_REFACTOR`) authorized across `internal/tarutil/`, `cmd/ateom-microvm/internal/ch/`, and `cmd/atelet/internal/ategcs/`.
 - **Sensitivity & Trajectory**: Continued exploration into Subsystem C (`tarutil`). Previous explorations in `tarutil` identified large allocations from dynamic interface wrapping structs via `writerOnly` and `readerOnly` in `copyPooled`, and from value boxing when deriving standard permissions from the tar header (`hdr.FileInfo().Mode().Perm()`).
 
 ### 2. Multi-Subsystem Metrics & Bottleneck Localization
@@ -42,8 +42,8 @@ strategy: "EXPLORE"
 - **Selected Strategy**: EXPLORE - `[ACTION: SUBSYSTEM_PIVOT]` & `[ACTION: CODE_REFACTOR]`
 - **Mutation Type**: `CODE_REFACTOR`
 - **Hypothesis ID**: `v016-tarutil-bcb4`
-- **Subsystem Focus**: `substrate/internal/tarutil` (Subsystem C)
-- **Proposed Mutation Payload**: `{"files": [{"filename": "substrate/internal/tarutil/tarutil.go", "status": "modified", "patch": "..."}]}` (See CLI payload)
+- **Subsystem Focus**: `internal/tarutil` (Subsystem C)
+- **Proposed Mutation Payload**: `{"files": [{"filename": "internal/tarutil/tarutil.go", "status": "modified", "patch": "..."}]}` (See CLI payload)
 - **Expected Gain & Technical Rationale**:
   - Eliminates value boxing within `copyPooled` by utilizing a pointer method implementation cached in a pool.
   - Bypasses `FileInfo()` allocation overhead for file headers. Expected to drop allocations per operation by several hundreds, significantly alleviating GC overhead.

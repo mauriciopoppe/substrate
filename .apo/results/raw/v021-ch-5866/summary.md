@@ -13,7 +13,7 @@ strategy: "EXPLORE"
 
 ### 1. Optimization State & Pareto Summary
 - **Current Pareto Frontier**: `v015-tarutil-75c2` and `v017-ategcs-9228`
-- **Active Search Space**: Pure Go codebase source mutations (`CODE_REFACTOR`) authorized across `substrate/internal/tarutil/`, `substrate/cmd/ateom-microvm/internal/ch/`, and `substrate/cmd/atelet/internal/ategcs/`.
+- **Active Search Space**: Pure Go codebase source mutations (`CODE_REFACTOR`) authorized across `internal/tarutil/`, `cmd/ateom-microvm/internal/ch/`, and `cmd/atelet/internal/ategcs/`.
 - **Sensitivity & Trajectory**: Progressing through subsystem rotation order (`ategcs` -> `ch` -> `tarutil`). The active target subsystem is Subsystem B (`ch`), branching from the Pareto champion `v017-ategcs-9228`.
 
 ### 2. Multi-Subsystem Metrics & Bottleneck Localization
@@ -37,17 +37,17 @@ strategy: "EXPLORE"
 - **Selected Strategy**: EXPLORE - `[ACTION: CODE_REFACTOR]`
 - **Mutation Type**: CODE_REFACTOR
 - **Hypothesis ID**: v021-ch-5866
-- **Subsystem Focus**: `substrate/cmd/ateom-microvm/internal/ch`
+- **Subsystem Focus**: `cmd/ateom-microvm/internal/ch`
 - **Proposed Mutation Payload**:
 ```json
 [
   {
-    "filename": "substrate/cmd/ateom-microvm/internal/ch/merge.go",
+    "filename": "cmd/ateom-microvm/internal/ch/merge.go",
     "intent": "Refactor copySparseRegions to accept a pre-computed size int64 to eliminate internal src.Stat() allocations, and use ReadAt/WriteAt to bypass Seek syscalls.",
     "target_symbols": ["copySparseRegions", "MergeSparseOverlay", "MergeDeltaIntoBase"]
   },
   {
-    "filename": "substrate/cmd/ateom-microvm/internal/ch/merge_bench_test.go",
+    "filename": "cmd/ateom-microvm/internal/ch/merge_bench_test.go",
     "intent": "Update copySparseRegions caller sites to pass the known size parameter.",
     "target_symbols": ["BenchmarkCopySparseRegions"]
   }

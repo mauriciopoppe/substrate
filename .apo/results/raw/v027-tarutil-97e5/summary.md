@@ -37,12 +37,12 @@ strategy: "EXPLORE"
 - **Selected Strategy**: EXPLORE - CODE_REFACTOR
 - **Mutation Type**: CODE_REFACTOR
 - **Hypothesis ID**: v027-tarutil-97e5
-- **Subsystem Focus**: `substrate/internal/tarutil`
+- **Subsystem Focus**: `internal/tarutil`
 - **Proposed Mutation Payload**: 
 ```json
 [
   {
-    "filename": "substrate/internal/tarutil/tarutil.go",
+    "filename": "internal/tarutil/tarutil.go",
     "intent": "Refactor readOverlayXattrs into readOverlayXattrsInto(path string, hdr *tar.Header) using a sync.Pool byte slice buffer to populate hdr.PAXRecords directly, eliminating per-file map and slice heap escapes. Refactor restoreOverlayXattrs to iterate hdr.PAXRecords directly without building a temporary map[string]string. Optimize directory metadata retention in Extract by storing a lightweight dirMeta struct instead of *tar.Header pointers to reduce heap volume.",
     "target_symbols": ["readOverlayXattrs", "writeTree", "Extract", "restoreOverlayXattrs"]
   }
@@ -55,11 +55,11 @@ strategy: "EXPLORE"
 ### 1. Decision Summary
 - **Outcome**: VALIDATED
 - **Strategy**: EXPLORE
-- **Rationale**: Validated pure Go code refactor in `substrate/internal/tarutil/tarutil.go`. Refactors `readOverlayXattrs` into `readOverlayXattrsInto` using pooled scratch buffers to populate `hdr.PAXRecords` directly, iterates `hdr.PAXRecords` in `restoreOverlayXattrs` without intermediate map allocations, and substitutes `*tar.Header` with lightweight `dirMeta` struct in `Extract` to reduce heap footprint while strictly preserving POSIX setuid, setgid, and sticky bits.
+- **Rationale**: Validated pure Go code refactor in `internal/tarutil/tarutil.go`. Refactors `readOverlayXattrs` into `readOverlayXattrsInto` using pooled scratch buffers to populate `hdr.PAXRecords` directly, iterates `hdr.PAXRecords` in `restoreOverlayXattrs` without intermediate map allocations, and substitutes `*tar.Header` with lightweight `dirMeta` struct in `Extract` to reduce heap footprint while strictly preserving POSIX setuid, setgid, and sticky bits.
 
 ### 2. Safety Rubric & Checklist Grading
 - **Deduplication Check**: PASS (Unique code refactor exploring Subsystem C tarutil; distinct from trials v014, v015, v024, v028, and v029)
-- **Physical Diff Audit**: PASS (Surgically scoped strictly to authorized component `substrate/internal/tarutil/tarutil.go` within allowed_file_scope)
+- **Physical Diff Audit**: PASS (Surgically scoped strictly to authorized component `internal/tarutil/tarutil.go` within allowed_file_scope)
 - **Domain Trait & Concurrency Check**: PASS (apo-provider-go-compiler: Thread-safe `sync.Pool` usage with bounded buffer capacity, zero goroutine leaks, zero unprotected shared mutable state)
 - **Management Cores Check**: PASS (Guaranteed QoS pod; node management cores unperturbed)
 - **Memory Headroom & OOM Guard**: PASS (Heap allocations reduced across archive xattr reading, extraction, and directory metadata retention)
@@ -68,4 +68,4 @@ strategy: "EXPLORE"
 ### 3. Vetted Parameter Specifications
 | Knob Name | Approved Value | Target Manifest | Domain Trait |
 | :--- | :--- | :--- | :--- |
-| `FEATURE_ZERO_ALLOC_TARUTIL_XATTRS` | `true` | `substrate/internal/tarutil/tarutil.go` | `apo-provider-go-compiler` |
+| `FEATURE_ZERO_ALLOC_TARUTIL_XATTRS` | `true` | `internal/tarutil/tarutil.go` | `apo-provider-go-compiler` |

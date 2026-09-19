@@ -13,16 +13,18 @@ strategy: "EXPLORE"
 
 ### 1. Optimization State & Pareto Summary
 - **Current Pareto Frontier**:
-  - `v003-ategcs-zstd-chunk-pool-a8d7` (Parent Champion): `composite_ns_per_op` = 49,489,457 ns/op (~49.5 ms), `composite_bytes_per_op` = 28,807,617 B/op (~27.5 MiB), `composite_allocs_per_op` = 14,085 allocs/op, `benchmark_failures` = 0 (Outcome: KEEP / Champion).
-  - `v000` (Initial Calibration Baseline): `composite_ns_per_op` = 59,491,529 ns/op, `composite_bytes_per_op` = 112,012,802 B/op, `composite_allocs_per_op` = 14,081 allocs/op, `benchmark_failures` = 0.
-- **Active Search Space**: Pure Go codebase source mutations (`CODE_REFACTOR`) authorized under `prompts/objective.md` across `substrate/cmd/atelet/internal/ategcs/`, `substrate/cmd/ateom-microvm/internal/ch/`, and `substrate/internal/tarutil/`.
+  - `v003-ategcs-zstd-chunk-pool-a8d7` (Parent Champion): `CPU latencies (ch, ategcs, tarutil)` = 49,489,457 ns/op (~49.5 ms), `total_bytes_per_op` = 28,807,617 B/op (~27.5 MiB), `total_allocs_per_op` = 14,085 allocs/op, `benchmark_failures` = 0 (Outcome: KEEP / Champion).
+  - `v000` (Initial Calibration Baseline): `CPU latencies (ch, ategcs, tarutil)` = 59,491,529 ns/op, `total_bytes_per_op` = 112,012,802 B/op, `total_allocs_per_op` = 14,081 allocs/op, `benchmark_failures` = 0.
+- **Active Search Space**: Pure Go codebase source mutations (`CODE_REFACTOR`) authorized under `prompts/objective.md` across `cmd/atelet/internal/ategcs/`, `cmd/ateom-microvm/internal/ch/`, and `internal/tarutil/`.
 - **Sensitivity & Trajectory**: Trials `v001`-`v003` explored Subsystem A (`ategcs`), reducing heap allocation volume by -74.3% (from 112.0 MiB to 28.8 MiB). Following the Mandatory Subsystem Pivot policy (`[ACTION: SUBSYSTEM_PIVOT]`), optimization now rotates to Subsystem B (`ch` - Sparse Memory Overlay Merging & Kernel Sparse Region Copying) to address remaining heap allocation bottlenecks.
 
 ### 2. Multi-Subsystem Metrics & Bottleneck Localization
 - **Observed Trial Metrics**:
-  - `composite_ns_per_op`: 49,489,457 ns/op
-  - `composite_bytes_per_op`: 28,807,617 B/op (~27.5 MiB)
-  - `composite_allocs_per_op`: 14,085 allocs/op
+  - `ch_ns_per_op`: 10,257,674 ns/op
+  - `ategcs_ns_per_op`: 28,690,509 ns/op
+  - `tarutil_ns_per_op`: 10,541,274 ns/op
+  - `total_bytes_per_op`: 28,807,617 B/op
+  - `total_allocs_per_op`: 14,085 allocs/op
   - `benchmark_failures`: 0
 - **SLA Status**: MET (All constraints satisfied; `benchmark_failures` == 0).
 - **Subsystem Health Triage**:
@@ -47,7 +49,7 @@ strategy: "EXPLORE"
 
 ### 4. Candidate Trade-Off Analysis (Exploit vs Explore)
 - **Option A (Exploit Path)**: Further parametric tuning in `ategcs`. Refuted due to Mandatory Subsystem Pivot policy (`ategcs` completed in `v003`, pivot to `ch`).
-- **Option B (Explore Path - Archetype Action)**: `[ACTION: SUBSYSTEM_PIVOT]` and `[ACTION: CODE_REFACTOR]` targeting `substrate/cmd/ateom-microvm/internal/ch/merge.go`. Introduces package-level `sparseCopyBufPool` (`sync.Pool`) for the 1 MiB scratch buffer in `copySparseRegions()`, recycling buffers across calls and eliminating heap churn.
+- **Option B (Explore Path - Archetype Action)**: `[ACTION: SUBSYSTEM_PIVOT]` and `[ACTION: CODE_REFACTOR]` targeting `cmd/ateom-microvm/internal/ch/merge.go`. Introduces package-level `sparseCopyBufPool` (`sync.Pool`) for the 1 MiB scratch buffer in `copySparseRegions()`, recycling buffers across calls and eliminating heap churn.
 
 ### 5. Selected Candidate & Proposed Knobs / Code Mutations
 - **Selected Strategy**: EXPLORE - `[ACTION: SUBSYSTEM_PIVOT]` / `[ACTION: CODE_REFACTOR]`
@@ -58,9 +60,9 @@ strategy: "EXPLORE"
 ```json
 [
   {
-    "filename": "substrate/cmd/ateom-microvm/internal/ch/merge.go",
+    "filename": "cmd/ateom-microvm/internal/ch/merge.go",
     "status": "modified",
-    "patch": "--- a/substrate/cmd/ateom-microvm/internal/ch/merge.go\n+++ b/substrate/cmd/ateom-microvm/internal/ch/merge.go\n@@ -25,6 +25,7 @@\n \t\"io\"\n \t\"os\"\n \t\"os/exec\"\n+\t\"sync\"\n \n \t\"github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/reaper\"\n \t\"golang.org/x/sys/unix\"\n@@ -172,13 +173,21 @@\n \treturn os.Rename(merged, deltaFile)\n }\n \n+var sparseCopyBufPool = sync.Pool{\n+\tNew: func() any {\n+\t\tb := make([]byte, 1<<20)\n+\t\treturn &b\n+\t},\n+}\n+\n // copySparseRegions overwrites dst with every populated (non-hole) region of src\n // at the same byte offsets, leaving dst's other bytes untouched. Holes in src are\n // located via SEEK_DATA/SEEK_HOLE and skipped. src and dst are assumed to be the\n // same logical size (the caller validates this).\n func copySparseRegions(src, dst *os.File) (copied int64, err error) {\n \tsi, err := src.Stat()\n \tif err != nil {\n \t\treturn 0, err\n \t}\n \tsize := si.Size()\n \tsfd := int(src.Fd())\n-\tbuf := make([]byte, 1<<20)\n+\tbp := sparseCopyBufPool.Get().(*[]byte)\n+\tdefer sparseCopyBufPool.Put(bp)\n+\tbuf := *bp\n \toff := int64(0)\n"
+    "patch": "--- a/cmd/ateom-microvm/internal/ch/merge.go\n+++ b/cmd/ateom-microvm/internal/ch/merge.go\n@@ -25,6 +25,7 @@\n \t\"io\"\n \t\"os\"\n \t\"os/exec\"\n+\t\"sync\"\n \n \t\"github.com/agent-substrate/cmd/ateom-microvm/internal/reaper\"\n \t\"golang.org/x/sys/unix\"\n@@ -172,13 +173,21 @@\n \treturn os.Rename(merged, deltaFile)\n }\n \n+var sparseCopyBufPool = sync.Pool{\n+\tNew: func() any {\n+\t\tb := make([]byte, 1<<20)\n+\t\treturn &b\n+\t},\n+}\n+\n // copySparseRegions overwrites dst with every populated (non-hole) region of src\n // at the same byte offsets, leaving dst's other bytes untouched. Holes in src are\n // located via SEEK_DATA/SEEK_HOLE and skipped. src and dst are assumed to be the\n // same logical size (the caller validates this).\n func copySparseRegions(src, dst *os.File) (copied int64, err error) {\n \tsi, err := src.Stat()\n \tif err != nil {\n \t\treturn 0, err\n \t}\n \tsize := si.Size()\n \tsfd := int(src.Fd())\n-\tbuf := make([]byte, 1<<20)\n+\tbp := sparseCopyBufPool.Get().(*[]byte)\n+\tdefer sparseCopyBufPool.Put(bp)\n+\tbuf := *bp\n \toff := int64(0)\n"
   }
 ]
 ```

@@ -17,9 +17,9 @@ strategy: "EXPLORE"
 - **Sensitivity & Trajectory**: Pool usage and kernel splicing significantly reduced allocations and CPU cycles in `ch` and `ategcs`. Subsystem C (`tarutil`) remains the dominant source of heap memory allocations.
 
 ### 2. Multi-Subsystem Metrics & Bottleneck Localization
-- **Observed Trial Metrics**: (From v022-ch-3c41) composite_ns_per_op: 43.34 ms, composite_bytes_per_op: 12.75 MB, composite_allocs_per_op: 13,184 allocs.
+- **Observed Trial Metrics**: (From v022-ch-3c41) CPU latencies (ch, ategcs, tarutil): 43.34 ms, total_bytes_per_op: 12.75 MB, total_allocs_per_op: 13,184 allocs.
 - **SLA Status**: MET
-- **Subsystem Health Triage**: Subsystem C (`substrate/internal/tarutil`): `BenchmarkExtract` is the dominant allocation hotspot, accounting for 9,141 allocs/op (69.3% of all suite allocations). `BenchmarkCreate` accounts for a further 3,901 allocs/op. High allocation counts correlate with dynamic map allocations (`dirs map[string]*tar.Header`) and `readOverlayXattrs` byte slice parsing on every file.
+- **Subsystem Health Triage**: Subsystem C (`internal/tarutil`): `BenchmarkExtract` is the dominant allocation hotspot, accounting for 9,141 allocs/op (69.3% of all suite allocations). `BenchmarkCreate` accounts for a further 3,901 allocs/op. High allocation counts correlate with dynamic map allocations (`dirs map[string]*tar.Header`) and `readOverlayXattrs` byte slice parsing on every file.
 - **Active Trait Providers Loaded**: `apo-provider-go-compiler`
 
 ### 3. Evidence Audit Trail & Grounding Sources
@@ -37,12 +37,12 @@ strategy: "EXPLORE"
 - **Selected Strategy**: EXPLORE - CODE_REFACTOR
 - **Mutation Type**: CODE_REFACTOR
 - **Hypothesis ID**: v029-tarutil-ded8
-- **Subsystem Focus**: `substrate/internal/tarutil` (Subsystem C)
+- **Subsystem Focus**: `internal/tarutil` (Subsystem C)
 - **Proposed Mutation Payload**:
 ```json
 [
   {
-    "filename": "substrate/internal/tarutil/tarutil.go",
+    "filename": "internal/tarutil/tarutil.go",
     "intent": "Implement sync.Pool recycling for the extraction directory slice (replacing map[string]*tar.Header in Extract) and pool the byte slices used in readOverlayXattrs, eliminating repetitive memory allocations.",
     "target_symbols": ["Extract", "restoreDirMeta", "readOverlayXattrs"]
   }

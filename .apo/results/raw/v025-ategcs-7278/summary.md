@@ -40,12 +40,12 @@ strategy: "EXPLORE"
 - **Selected Strategy**: EXPLORE - `[ACTION: CODE_REFACTOR]`
 - **Mutation Type**: `CODE_REFACTOR`
 - **Hypothesis ID**: `v025-ategcs-7278`
-- **Subsystem Focus**: `substrate/cmd/atelet/internal/ategcs` (Subsystem A)
+- **Subsystem Focus**: `cmd/atelet/internal/ategcs` (Subsystem A)
 - **Proposed Mutation Payload**: 
 ```json
 [
   {
-    "filename": "substrate/cmd/atelet/internal/ategcs/parzstd.go",
+    "filename": "cmd/atelet/internal/ategcs/parzstd.go",
     "intent": "Append zstd.WithLowerEncoderMem(true), zstd.WithZeroFrames(true), and zstd.WithWindowSize(1 << 20) to the zstd.NewWriter options in zstdEncoderPool.New to slash the memory footprint of fastBase.ensureHist initialized per parallel chunk worker.",
     "target_symbols": [
       "zstdEncoderPool"

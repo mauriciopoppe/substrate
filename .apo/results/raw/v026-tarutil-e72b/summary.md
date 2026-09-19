@@ -18,11 +18,14 @@ strategy: "EXPLORE"
 
 ### 2. Multi-Subsystem Metrics & Bottleneck Localization
 - **Observed Trial Metrics**: From v018 Champion:
-  - `composite_ns_per_op`: 47,034,705 ns/op
-  - `composite_bytes_per_op`: 16,059,505 B/op 
-  - `composite_allocs_per_op`: 13,191 allocs/op
+  - `ch_ns_per_op`: 9,801,637 ns/op
+  - `ategcs_ns_per_op`: 26,506,615 ns/op
+  - `tarutil_ns_per_op`: 10,726,453 ns/op
+  - `total_bytes_per_op`: 16,059,505 B/op
+  - `total_allocs_per_op`: 13,191 allocs/op
+  - `benchmark_failures`: 0
 - **SLA Status**: MET
-- **Subsystem Health Triage**: Subsystem C (`substrate/internal/tarutil`): `BenchmarkExtract` accounts for 9,141 allocs/op (~69% of allocations) and `BenchmarkCreate` accounts for 3,902 allocs/op.
+- **Subsystem Health Triage**: Subsystem C (`internal/tarutil`): `BenchmarkExtract` accounts for 9,141 allocs/op (~69% of allocations) and `BenchmarkCreate` accounts for 3,902 allocs/op.
 - **Active Trait Providers Loaded**: `apo-provider-go-compiler`
 
 ### 3. Evidence Audit Trail & Grounding Sources
@@ -40,12 +43,12 @@ strategy: "EXPLORE"
 - **Selected Strategy**: EXPLORE - `[ACTION: CODE_REFACTOR]`
 - **Mutation Type**: CODE_REFACTOR
 - **Hypothesis ID**: v026-tarutil-e72b
-- **Subsystem Focus**: `substrate/internal/tarutil` (Subsystem C)
+- **Subsystem Focus**: `internal/tarutil` (Subsystem C)
 - **Proposed Mutation Payload**: 
 ```json
 [
   {
-    "filename": "substrate/internal/tarutil/tarutil.go",
+    "filename": "internal/tarutil/tarutil.go",
     "intent": "Implement sync.Pool recycling for the extraction directory map (dirs map[string]*tar.Header) in Extract and the linked map in writeTree to eliminate map allocation overhead per archive, and pool the byte buffers used in readOverlayXattrs.",
     "target_symbols": [
       "Extract",
@@ -54,7 +57,7 @@ strategy: "EXPLORE"
     ]
   },
   {
-    "filename": "substrate/internal/tarutil/owner_linux.go",
+    "filename": "internal/tarutil/owner_linux.go",
     "intent": "Introduce a shared cached stat struct or bypass redundant syscall.Stat_t type assertions to eliminate repetitive stat overhead across inodeOf, nlinkOf, and setOwner.",
     "target_symbols": [
       "inodeOf",
