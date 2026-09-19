@@ -1,0 +1,19 @@
+# Local environments & credentials
+.gcloud-config/
+.kubeconfig*
+scratch/
+tmp/
+.worktrees/
+optuna_study.db*
+
+# WorkQueue ephemera & locks
+results/state.json
+results/.state.lock
+results/state_transitions.jsonl
+results/queue/
+results/scratch/
+results/test_dryrun/
+results/**/benchmark.pid
+*.test
+*.pprof
+*.pid

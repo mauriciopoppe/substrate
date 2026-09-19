@@ -8,18 +8,19 @@ set -euo pipefail
 
 export GOFLAGS="${GOFLAGS:--mod=mod}"
 
-RESULTS_DIR="${1:-results/scratch}"
+RESULTS_DIR="${1:-.apo/results/scratch}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WORKLOAD_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 if [[ "$RESULTS_DIR" != /* ]]; then
-  RESULTS_DIR="${SCRIPT_DIR}/${RESULTS_DIR}"
+  RESULTS_DIR="${WORKLOAD_ROOT}/${RESULTS_DIR}"
 fi
 mkdir -p "${RESULTS_DIR}"
 
 BIN_DIR="${RESULTS_DIR}/bin"
 mkdir -p "${BIN_DIR}"
 
-SUBSTRATE_DIR="${SCRIPT_DIR}/substrate"
+SUBSTRATE_DIR="${WORKLOAD_ROOT}/substrate"
 cd "${SUBSTRATE_DIR}"
 
 echo ">>> Verifying and compiling standalone Linux amd64 test binaries..."

@@ -32,10 +32,11 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-RESULTS_DIR="${RESULTS_DIR:-results/scratch}"
+RESULTS_DIR="${RESULTS_DIR:-.apo/results/scratch}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WORKLOAD_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 if [[ "$RESULTS_DIR" != /* ]]; then
-  RESULTS_DIR="${SCRIPT_DIR}/${RESULTS_DIR}"
+  RESULTS_DIR="${WORKLOAD_ROOT}/${RESULTS_DIR}"
 fi
 
 mkdir -p "${RESULTS_DIR}/monitor/profiles"

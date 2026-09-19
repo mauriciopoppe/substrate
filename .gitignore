@@ -1,22 +1,6 @@
-# Local environments & credentials
-.gcloud-config
-.kubeconfig*
+# Python & local ephemera
 .venv/
 __pycache__/
-scratch/
-tmp/
-.worktrees/
-optuna_study.db
-
 *.pb.gz
-
-# SafeTune WorkQueue & Runner Ephemera
-results/state.json
-results/.state.lock
-results/state_transitions.jsonl
-results/queue/
-results/scratch/
-results/test_dryrun/
-results/**/benchmark.pid
 *.test
 *.pprof
