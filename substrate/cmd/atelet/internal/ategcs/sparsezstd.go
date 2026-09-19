@@ -44,6 +44,13 @@ const sparseVersion uint32 = 2
 // and the reader stops when it sees the sentinel.
 const sparseEndOffset int64 = -1
 
+var sparseWriteBufPool = sync.Pool{
+	New: func() any {
+		b := make([]byte, 32*1024)
+		return &b
+	},
+}
+
 // writeSparseZstd encodes a sparse file src to dst in the sparse-extent format:
 //
 //	magic[8] | version:u32 | zstd( totalSize:i64 | (off:i64, len:i64, data[len])* | -1:i64 )
@@ -90,6 +97,10 @@ func writeSparseZstd(dst io.Writer, src *os.File) (logical, dataBytes int64, err
 		return fail(err)
 	}
 
+	bp := sparseWriteBufPool.Get().(*[]byte)
+	defer sparseWriteBufPool.Put(bp)
+	buf := *bp
+
 	fd := int(src.Fd())
 	off := int64(0)
 	for off < size {
@@ -114,10 +125,13 @@ func writeSparseZstd(dst io.Writer, src *os.File) (logical, dataBytes int64, err
 		if _, err := src.Seek(ds, io.SeekStart); err != nil {
 			return fail(err)
 		}
-		n, cerr := io.CopyN(zw, src, length)
+		n, cerr := io.CopyBuffer(zw, io.LimitReader(src, length), buf)
 		dataBytes += n
 		if cerr != nil {
 			return fail(fmt.Errorf("reading extent @%d+%d: %w", ds, length, cerr))
+		}
+		if n < length {
+			return fail(fmt.Errorf("reading extent @%d+%d: %w", ds, length, io.EOF))
 		}
 		off = de
 	}

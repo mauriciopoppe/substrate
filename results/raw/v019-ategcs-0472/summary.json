@@ -1,0 +1,162 @@
+{
+  "status": "COMPLETED",
+  "iterations": 3,
+  "median_iteration_index": 3,
+  "metrics": {
+    "composite_ns_per_op": 47404056.0,
+    "composite_bytes_per_op": 21191734.0,
+    "composite_allocs_per_op": 13263.0,
+    "BenchmarkMergeDeltaIntoBase_ns_per_op": 2508970.0,
+    "BenchmarkMergeDeltaIntoBase_bytes_per_op": 2448.0,
+    "BenchmarkMergeDeltaIntoBase_allocs_per_op": 27.0,
+    "BenchmarkCopySparseRegions_ns_per_op": 7302606.0,
+    "BenchmarkCopySparseRegions_bytes_per_op": 208.0,
+    "BenchmarkCopySparseRegions_allocs_per_op": 1.0,
+    "BenchmarkWriteSparseZstd_ns_per_op": 10484095.0,
+    "BenchmarkWriteSparseZstd_bytes_per_op": 20374067.0,
+    "BenchmarkWriteSparseZstd_allocs_per_op": 172.0,
+    "BenchmarkReadSparseZstd_ns_per_op": 15519209.0,
+    "BenchmarkReadSparseZstd_bytes_per_op": 131619.0,
+    "BenchmarkReadSparseZstd_allocs_per_op": 20.0,
+    "BenchmarkExtract_ns_per_op": 7980800.0,
+    "BenchmarkExtract_bytes_per_op": 362428.0,
+    "BenchmarkExtract_allocs_per_op": 9141.0,
+    "BenchmarkCreate_ns_per_op": 3608376.0,
+    "BenchmarkCreate_bytes_per_op": 320964.0,
+    "BenchmarkCreate_allocs_per_op": 3902.0
+  },
+  "constraints": {
+    "benchmark_failures": 0
+  },
+  "benchmarks": {
+    "BenchmarkMergeDeltaIntoBase": {
+      "iterations": 5,
+      "ns_per_op": 2508970.0,
+      "bytes_per_op": 2448.0,
+      "allocs_per_op": 27.0
+    },
+    "BenchmarkCopySparseRegions": {
+      "iterations": 5,
+      "ns_per_op": 7302606.0,
+      "bytes_per_op": 208.0,
+      "allocs_per_op": 1.0
+    },
+    "BenchmarkWriteSparseZstd": {
+      "iterations": 5,
+      "ns_per_op": 10484095.0,
+      "bytes_per_op": 20374067.0,
+      "allocs_per_op": 172.0
+    },
+    "BenchmarkReadSparseZstd": {
+      "iterations": 5,
+      "ns_per_op": 15519209.0,
+      "bytes_per_op": 131619.0,
+      "allocs_per_op": 20.0
+    },
+    "BenchmarkExtract": {
+      "iterations": 5,
+      "ns_per_op": 7980800.0,
+      "bytes_per_op": 362428.0,
+      "allocs_per_op": 9141.0
+    },
+    "BenchmarkCreate": {
+      "iterations": 5,
+      "ns_per_op": 3608376.0,
+      "bytes_per_op": 320964.0,
+      "allocs_per_op": 3902.0
+    }
+  },
+  "profiling_summary": {
+    "profiles_dir": "monitor/profiles",
+    "monitor_readme": "monitor/README.md"
+  },
+  "iteration_breakdown": [
+    {
+      "iteration": 1,
+      "metrics": {
+        "composite_ns_per_op": 46743767.0,
+        "composite_bytes_per_op": 22207382.0,
+        "composite_allocs_per_op": 13265.0,
+        "BenchmarkMergeDeltaIntoBase_ns_per_op": 2166441.0,
+        "BenchmarkMergeDeltaIntoBase_bytes_per_op": 2448.0,
+        "BenchmarkMergeDeltaIntoBase_allocs_per_op": 27.0,
+        "BenchmarkCopySparseRegions_ns_per_op": 7051022.0,
+        "BenchmarkCopySparseRegions_bytes_per_op": 208.0,
+        "BenchmarkCopySparseRegions_allocs_per_op": 1.0,
+        "BenchmarkWriteSparseZstd_ns_per_op": 10860443.0,
+        "BenchmarkWriteSparseZstd_bytes_per_op": 20374214.0,
+        "BenchmarkWriteSparseZstd_allocs_per_op": 172.0,
+        "BenchmarkReadSparseZstd_ns_per_op": 15844358.0,
+        "BenchmarkReadSparseZstd_bytes_per_op": 1214638.0,
+        "BenchmarkReadSparseZstd_allocs_per_op": 25.0,
+        "BenchmarkExtract_ns_per_op": 7183719.0,
+        "BenchmarkExtract_bytes_per_op": 335908.0,
+        "BenchmarkExtract_allocs_per_op": 9139.0,
+        "BenchmarkCreate_ns_per_op": 3637784.0,
+        "BenchmarkCreate_bytes_per_op": 279966.0,
+        "BenchmarkCreate_allocs_per_op": 3901.0
+      },
+      "constraints": {
+        "benchmark_failures": 0
+      }
+    },
+    {
+      "iteration": 3,
+      "metrics": {
+        "composite_ns_per_op": 47404056.0,
+        "composite_bytes_per_op": 21191734.0,
+        "composite_allocs_per_op": 13263.0,
+        "BenchmarkMergeDeltaIntoBase_ns_per_op": 2508970.0,
+        "BenchmarkMergeDeltaIntoBase_bytes_per_op": 2448.0,
+        "BenchmarkMergeDeltaIntoBase_allocs_per_op": 27.0,
+        "BenchmarkCopySparseRegions_ns_per_op": 7302606.0,
+        "BenchmarkCopySparseRegions_bytes_per_op": 208.0,
+        "BenchmarkCopySparseRegions_allocs_per_op": 1.0,
+        "BenchmarkWriteSparseZstd_ns_per_op": 10484095.0,
+        "BenchmarkWriteSparseZstd_bytes_per_op": 20374067.0,
+        "BenchmarkWriteSparseZstd_allocs_per_op": 172.0,
+        "BenchmarkReadSparseZstd_ns_per_op": 15519209.0,
+        "BenchmarkReadSparseZstd_bytes_per_op": 131619.0,
+        "BenchmarkReadSparseZstd_allocs_per_op": 20.0,
+        "BenchmarkExtract_ns_per_op": 7980800.0,
+        "BenchmarkExtract_bytes_per_op": 362428.0,
+        "BenchmarkExtract_allocs_per_op": 9141.0,
+        "BenchmarkCreate_ns_per_op": 3608376.0,
+        "BenchmarkCreate_bytes_per_op": 320964.0,
+        "BenchmarkCreate_allocs_per_op": 3902.0
+      },
+      "constraints": {
+        "benchmark_failures": 0
+      }
+    },
+    {
+      "iteration": 2,
+      "metrics": {
+        "composite_ns_per_op": 47621367.0,
+        "composite_bytes_per_op": 23890418.0,
+        "composite_allocs_per_op": 13268.0,
+        "BenchmarkMergeDeltaIntoBase_ns_per_op": 2123846.0,
+        "BenchmarkMergeDeltaIntoBase_bytes_per_op": 2448.0,
+        "BenchmarkMergeDeltaIntoBase_allocs_per_op": 27.0,
+        "BenchmarkCopySparseRegions_ns_per_op": 7293495.0,
+        "BenchmarkCopySparseRegions_bytes_per_op": 208.0,
+        "BenchmarkCopySparseRegions_allocs_per_op": 1.0,
+        "BenchmarkWriteSparseZstd_ns_per_op": 11711286.0,
+        "BenchmarkWriteSparseZstd_bytes_per_op": 22058563.0,
+        "BenchmarkWriteSparseZstd_allocs_per_op": 174.0,
+        "BenchmarkReadSparseZstd_ns_per_op": 15771461.0,
+        "BenchmarkReadSparseZstd_bytes_per_op": 1214638.0,
+        "BenchmarkReadSparseZstd_allocs_per_op": 25.0,
+        "BenchmarkExtract_ns_per_op": 7089969.0,
+        "BenchmarkExtract_bytes_per_op": 375584.0,
+        "BenchmarkExtract_allocs_per_op": 9142.0,
+        "BenchmarkCreate_ns_per_op": 3631310.0,
+        "BenchmarkCreate_bytes_per_op": 238977.0,
+        "BenchmarkCreate_allocs_per_op": 3899.0
+      },
+      "constraints": {
+        "benchmark_failures": 0
+      }
+    }
+  ]
+}

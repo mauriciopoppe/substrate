@@ -1,0 +1,37 @@
+File: tarutil.test
+Build ID: 84969c7fd3301c9f10946809187a046ab5efede6
+Type: alloc_space
+Time: 2026-09-19 01:19:21 UTC
+Showing nodes accounting for 11504.67kB, 100% of 11504.67kB total
+Showing top 30 nodes out of 81
+      flat  flat%   sum%        cum   cum%
+ 1762.94kB 15.32% 15.32%  1762.94kB 15.32%  runtime/pprof.StartCPUProfile
+ 1157.33kB 10.06% 25.38%  1157.33kB 10.06%  github.com/agent-substrate/substrate/internal/tarutil.init.func3
+ 1024.09kB  8.90% 34.28%  1024.09kB  8.90%  os.newFile
+  688.56kB  5.99% 40.27%   688.56kB  5.99%  compress/flate.(*fastGen).addBlock
+  655.29kB  5.70% 45.97%  1238.30kB 10.76%  compress/flate.NewWriter (inline)
+  583.01kB  5.07% 51.03%   583.01kB  5.07%  compress/flate.newFastEnc (inline)
+     513kB  4.46% 55.49%      513kB  4.46%  runtime.mallocgc
+  512.11kB  4.45% 59.94%  1024.12kB  8.90%  archive/tar.(*Reader).readHeader
+  512.10kB  4.45% 64.39%   512.10kB  4.45%  os.lstatNolog
+  512.08kB  4.45% 68.85%   512.08kB  4.45%  compress/gzip.NewWriterLevel
+  512.06kB  4.45% 73.30%   512.06kB  4.45%  os.readlinkat
+  512.03kB  4.45% 77.75%   512.03kB  4.45%  golang.org/x/sys/unix.ByteSliceFromString
+  512.02kB  4.45% 82.20%   512.02kB  4.45%  testing.(*B).ResetTimer
+  512.02kB  4.45% 86.65%   512.02kB  4.45%  os.splitPathInRoot
+  512.01kB  4.45% 91.10%   512.01kB  4.45%  archive/tar.(*Reader).handleRegularFile (inline)
+  512.01kB  4.45% 95.55%   512.01kB  4.45%  archive/tar.(*Writer).writeRawHeader
+  512.01kB  4.45%   100%   512.01kB  4.45%  archive/tar.(*parser).parseString
+         0     0%   100%  1536.13kB 13.35%  archive/tar.(*Reader).Next
+         0     0%   100%  1536.13kB 13.35%  archive/tar.(*Reader).next
+         0     0%   100%   512.01kB  4.45%  archive/tar.(*Writer).WriteHeader
+         0     0%   100%   512.01kB  4.45%  archive/tar.(*Writer).writeUSTARHeader
+         0     0%   100%   512.01kB  4.45%  archive/tar.(*parser).parseNumeric
+         0     0%   100%   512.01kB  4.45%  archive/tar.(*parser).parseOctal
+         0     0%   100%   688.56kB  5.99%  compress/flate.(*Writer).Close (inline)
+         0     0%   100%   688.56kB  5.99%  compress/flate.(*compressor).close
+         0     0%   100%   688.56kB  5.99%  compress/flate.(*compressor).deflateFast
+         0     0%   100%   583.01kB  5.07%  compress/flate.(*compressor).init
+         0     0%   100%   688.56kB  5.99%  compress/flate.(*fastEncL1).encode
+         0     0%   100%   688.56kB  5.99%  compress/gzip.(*Writer).Close
+         0     0%   100%  1238.30kB 10.76%  compress/gzip.(*Writer).Write

@@ -1,0 +1,37 @@
+File: ch.test
+Build ID: fd89334e97151f1cceb6fd06a05b102072ea3d09
+Type: alloc_space
+Time: 2026-09-19 01:19:18 UTC
+Showing nodes accounting for 79.16MB, 100% of 79.16MB total
+Showing top 30 nodes out of 41
+      flat  flat%   sum%        cum   cum%
+   71.88MB 90.80% 90.80%    71.88MB 90.80%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.fill (inline)
+    4.63MB  5.84% 96.64%     4.63MB  5.84%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.init.func1
+    1.16MB  1.46% 98.10%     1.16MB  1.46%  runtime/pprof.StartCPUProfile
+    0.50MB  0.63% 98.74%     0.50MB  0.63%  runtime.mallocgc
+    0.50MB  0.63% 99.37%     0.50MB  0.63%  compress/gzip.NewWriterLevel
+    0.50MB  0.63%   100%     0.50MB  0.63%  syscall.ByteSliceFromString
+         0     0%   100%    34.32MB 43.35%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.BenchmarkCopySparseRegions
+         0     0%   100%    42.69MB 53.92%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.BenchmarkMergeDeltaIntoBase
+         0     0%   100%     4.63MB  5.84%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.cloneFile
+         0     0%   100%     4.63MB  5.84%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.copySparseRegions
+         0     0%   100%     0.50MB  0.63%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.writeSparseTmpl
+         0     0%   100%     1.16MB  1.46%  main.main
+         0     0%   100%     0.50MB  0.63%  os.Create (inline)
+         0     0%   100%     0.50MB  0.63%  os.OpenFile
+         0     0%   100%     0.50MB  0.63%  os.ignoringEINTR (inline)
+         0     0%   100%     0.50MB  0.63%  os.open
+         0     0%   100%     0.50MB  0.63%  os.openFileNolog
+         0     0%   100%     0.50MB  0.63%  os.openFileNolog.func1 (inline)
+         0     0%   100%     0.50MB  0.63%  runtime.allocm
+         0     0%   100%     1.16MB  1.46%  runtime.main
+         0     0%   100%     0.50MB  0.63%  runtime.mstart
+         0     0%   100%     0.50MB  0.63%  runtime.mstart0
+         0     0%   100%     0.50MB  0.63%  runtime.mstart1
+         0     0%   100%     0.50MB  0.63%  runtime.newm
+         0     0%   100%     0.50MB  0.63%  runtime.newobject
+         0     0%   100%     0.50MB  0.63%  runtime.resetspinning
+         0     0%   100%     0.50MB  0.63%  runtime.schedule
+         0     0%   100%     0.50MB  0.63%  runtime.startm
+         0     0%   100%     0.50MB  0.63%  runtime.wakep
+         0     0%   100%     0.50MB  0.63%  runtime/pprof.newProfileBuilder

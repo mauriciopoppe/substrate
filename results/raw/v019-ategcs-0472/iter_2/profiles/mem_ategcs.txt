@@ -1,0 +1,38 @@
+File: ategcs.test
+Build ID: 50f9919429d6926b302570bb9c5ffb54097eb187
+Type: alloc_space
+Time: 2026-09-19 01:19:20 UTC
+Showing nodes accounting for 332.33MB, 97.67% of 340.24MB total
+Dropped 64 nodes (cum <= 1.70MB)
+Showing top 30 nodes out of 35
+      flat  flat%   sum%        cum   cum%
+     128MB 37.62% 37.62%      128MB 37.62%  github.com/klauspost/compress/zstd.(*fastBase).ensureHist (inline)
+      80MB 23.51% 61.13%       80MB 23.51%  github.com/agent-substrate/substrate/cmd/atelet/internal/ategcs.init.func1
+   64.66MB 19.00% 80.14%    64.66MB 19.00%  github.com/agent-substrate/substrate/cmd/atelet/internal/ategcs.writeSparseSourceTB
+      34MB  9.99% 90.13%       34MB  9.99%  github.com/agent-substrate/substrate/cmd/atelet/internal/ategcs.init.func2
+      10MB  2.94% 93.07%       10MB  2.94%  github.com/klauspost/compress/zstd.(*history).ensureBlock (inline)
+    8.32MB  2.45% 95.51%     8.32MB  2.45%  github.com/klauspost/compress/zstd.encoderOptions.encoder
+    7.35MB  2.16% 97.67%     7.35MB  2.16%  github.com/klauspost/compress/zstd.(*blockEnc).init
+         0     0% 97.67%       10MB  2.94%  encoding/binary.Read
+         0     0% 97.67%   178.67MB 52.51%  github.com/agent-substrate/substrate/cmd/atelet/internal/ategcs.(*parZstd).worker
+         0     0% 97.67%    51.36MB 15.10%  github.com/agent-substrate/substrate/cmd/atelet/internal/ategcs.BenchmarkReadSparseZstd
+         0     0% 97.67%   104.33MB 30.66%  github.com/agent-substrate/substrate/cmd/atelet/internal/ategcs.BenchmarkWriteSparseZstd
+         0     0% 97.67%       80MB 23.51%  github.com/agent-substrate/substrate/cmd/atelet/internal/ategcs.newParZstd
+         0     0% 97.67%    11.03MB  3.24%  github.com/agent-substrate/substrate/cmd/atelet/internal/ategcs.readSparseZstd
+         0     0% 97.67%       80MB 23.51%  github.com/agent-substrate/substrate/cmd/atelet/internal/ategcs.writeSparseZstd
+         0     0% 97.67%       10MB  2.94%  github.com/klauspost/compress/zstd.(*Decoder).Read
+         0     0% 97.67%       10MB  2.94%  github.com/klauspost/compress/zstd.(*Decoder).nextBlock
+         0     0% 97.67%       10MB  2.94%  github.com/klauspost/compress/zstd.(*Decoder).nextBlockSync
+         0     0% 97.67%   144.17MB 42.37%  github.com/klauspost/compress/zstd.(*Encoder).EncodeAll
+         0     0% 97.67%   135.85MB 39.93%  github.com/klauspost/compress/zstd.(*Encoder).encodeAll
+         0     0% 97.67%     8.32MB  2.45%  github.com/klauspost/compress/zstd.(*Encoder).initialize
+         0     0% 97.67%      128MB 37.62%  github.com/klauspost/compress/zstd.(*fastBase).addBlock
+         0     0% 97.67%     7.35MB  2.16%  github.com/klauspost/compress/zstd.(*fastBase).resetBase
+         0     0% 97.67%      128MB 37.62%  github.com/klauspost/compress/zstd.(*fastEncoder).Encode
+         0     0% 97.67%     7.35MB  2.16%  github.com/klauspost/compress/zstd.(*fastEncoder).Reset
+         0     0% 97.67%       10MB  2.94%  io.ReadAtLeast
+         0     0% 97.67%       10MB  2.94%  io.ReadFull (inline)
+         0     0% 97.67%     2.58MB  0.76%  runtime.doInit (inline)
+         0     0% 97.67%     2.58MB  0.76%  runtime.doInit1
+         0     0% 97.67%     4.24MB  1.25%  runtime.main
+         0     0% 97.67%     8.82MB  2.59%  sync.(*Once).Do (inline)

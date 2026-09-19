@@ -1,0 +1,37 @@
+File: ch.test
+Build ID: fd89334e97151f1cceb6fd06a05b102072ea3d09
+Type: alloc_space
+Time: 2026-09-19 01:19:14 UTC
+Showing nodes accounting for 79.18MB, 100% of 79.18MB total
+Showing top 30 nodes out of 51
+      flat  flat%   sum%        cum   cum%
+   70.72MB 89.32% 89.32%    70.72MB 89.32%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.fill (inline)
+    4.63MB  5.84% 95.16%     4.63MB  5.84%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.init.func1
+    1.16MB  1.46% 96.62%     1.16MB  1.46%  runtime/pprof.StartCPUProfile
+    0.67MB  0.85% 97.47%     0.67MB  0.85%  compress/flate.(*fastGen).addBlock
+    0.50MB  0.63% 98.11%     0.50MB  0.63%  runtime.mallocgc
+    0.50MB  0.63% 98.74%     0.50MB  0.63%  sync.(*Pool).pinSlow
+    0.50MB  0.63% 99.37%     0.50MB  0.63%  compress/gzip.NewWriterLevel
+    0.50MB  0.63%   100%     0.50MB  0.63%  testing.(*B).ResetTimer
+         0     0%   100%     0.67MB  0.85%  compress/flate.(*Writer).Close (inline)
+         0     0%   100%     0.67MB  0.85%  compress/flate.(*compressor).close
+         0     0%   100%     0.67MB  0.85%  compress/flate.(*compressor).deflateFast
+         0     0%   100%     0.67MB  0.85%  compress/flate.(*fastEncL1).encode
+         0     0%   100%     0.67MB  0.85%  compress/gzip.(*Writer).Close
+         0     0%   100%    34.32MB 43.34%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.BenchmarkCopySparseRegions
+         0     0%   100%    41.03MB 51.82%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.BenchmarkMergeDeltaIntoBase
+         0     0%   100%     4.63MB  5.84%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.cloneFile
+         0     0%   100%     4.63MB  5.84%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.copySparseRegions
+         0     0%   100%     1.66MB  2.09%  main.main
+         0     0%   100%     0.50MB  0.63%  os.(*File).Readdirnames
+         0     0%   100%     0.50MB  0.63%  os.(*File).readdir
+         0     0%   100%     0.50MB  0.63%  os.RemoveAll
+         0     0%   100%     0.50MB  0.63%  os.removeAll
+         0     0%   100%     0.50MB  0.63%  os.removeAllFrom
+         0     0%   100%     0.50MB  0.63%  runtime.allocm
+         0     0%   100%     1.66MB  2.09%  runtime.main
+         0     0%   100%     0.50MB  0.63%  runtime.mstart
+         0     0%   100%     0.50MB  0.63%  runtime.mstart0
+         0     0%   100%     0.50MB  0.63%  runtime.mstart1
+         0     0%   100%     0.50MB  0.63%  runtime.newm
+         0     0%   100%     0.50MB  0.63%  runtime.newobject

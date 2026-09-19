@@ -1,0 +1,37 @@
+File: tarutil.test
+Build ID: 84969c7fd3301c9f10946809187a046ab5efede6
+Type: alloc_space
+Time: 2026-09-19 01:19:17 UTC
+Showing nodes accounting for 9212.64kB, 100% of 9212.64kB total
+Showing top 30 nodes out of 100
+      flat  flat%   sum%        cum   cum%
+ 1184.27kB 12.85% 12.85%  1184.27kB 12.85%  runtime/pprof.StartCPUProfile
+ 1024.04kB 11.12% 23.97%  1024.04kB 11.12%  syscall.ByteSliceFromString
+  688.56kB  7.47% 31.44%   688.56kB  7.47%  compress/flate.(*fastGen).addBlock
+  583.01kB  6.33% 37.77%   583.01kB  6.33%  compress/flate.newFastEnc (inline)
+  578.66kB  6.28% 44.05%   578.66kB  6.28%  github.com/agent-substrate/substrate/internal/tarutil.init.func3
+  544.67kB  5.91% 49.97%   544.67kB  5.91%  bufio.NewWriterSize (inline)
+     513kB  5.57% 55.53%      513kB  5.57%  runtime.mallocgc
+  512.10kB  5.56% 61.09%   512.10kB  5.56%  os.lstatNolog
+  512.10kB  5.56% 66.65%   512.10kB  5.56%  os.lstatatWithName
+  512.08kB  5.56% 72.21%   512.08kB  5.56%  compress/gzip.NewWriterLevel
+  512.06kB  5.56% 77.77%  1024.07kB 11.12%  os.readlinkat
+  512.03kB  5.56% 83.33%   512.03kB  5.56%  golang.org/x/sys/unix.ByteSliceFromString
+  512.03kB  5.56% 88.88%   512.03kB  5.56%  os.(*File).readdir
+  512.02kB  5.56% 94.44%   512.02kB  5.56%  os.splitPathInRoot
+  512.01kB  5.56%   100%   512.01kB  5.56%  archive/tar.(*parser).parseString
+         0     0%   100%   512.01kB  5.56%  archive/tar.(*Reader).Next
+         0     0%   100%   512.01kB  5.56%  archive/tar.(*Reader).next
+         0     0%   100%   512.01kB  5.56%  archive/tar.(*Reader).readHeader
+         0     0%   100%   688.56kB  7.47%  compress/flate.(*Writer).Close (inline)
+         0     0%   100%   688.56kB  7.47%  compress/flate.(*compressor).close
+         0     0%   100%   688.56kB  7.47%  compress/flate.(*compressor).deflateFast
+         0     0%   100%   583.01kB  6.33%  compress/flate.(*compressor).init
+         0     0%   100%   688.56kB  7.47%  compress/flate.(*fastEncL1).encode
+         0     0%   100%   583.01kB  6.33%  compress/flate.NewWriter (inline)
+         0     0%   100%   688.56kB  7.47%  compress/gzip.(*Writer).Close
+         0     0%   100%   583.01kB  6.33%  compress/gzip.(*Writer).Write
+         0     0%   100%  3171.52kB 34.43%  github.com/agent-substrate/substrate/internal/tarutil.BenchmarkCreate
+         0     0%   100%  2560.20kB 27.79%  github.com/agent-substrate/substrate/internal/tarutil.BenchmarkExtract
+         0     0%   100%  2659.49kB 28.87%  github.com/agent-substrate/substrate/internal/tarutil.Create (inline)
+         0     0%   100%  2659.49kB 28.87%  github.com/agent-substrate/substrate/internal/tarutil.CreateFiltered

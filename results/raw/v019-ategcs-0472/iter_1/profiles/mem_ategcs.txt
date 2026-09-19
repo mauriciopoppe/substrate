@@ -1,0 +1,38 @@
+File: ategcs.test
+Build ID: 50f9919429d6926b302570bb9c5ffb54097eb187
+Type: alloc_space
+Time: 2026-09-19 01:19:15 UTC
+Showing nodes accounting for 330.47MB, 97.41% of 339.26MB total
+Dropped 97 nodes (cum <= 1.70MB)
+Showing top 30 nodes out of 37
+      flat  flat%   sum%        cum   cum%
+     128MB 37.73% 37.73%      128MB 37.73%  github.com/klauspost/compress/zstd.(*fastBase).ensureHist (inline)
+      80MB 23.58% 61.31%       80MB 23.58%  github.com/agent-substrate/substrate/cmd/atelet/internal/ategcs.init.func1
+   64.66MB 19.06% 80.37%    64.66MB 19.06%  github.com/agent-substrate/substrate/cmd/atelet/internal/ategcs.writeSparseSourceTB
+      34MB 10.02% 90.39%       34MB 10.02%  github.com/agent-substrate/substrate/cmd/atelet/internal/ategcs.init.func2
+      10MB  2.95% 93.34%       10MB  2.95%  github.com/klauspost/compress/zstd.(*history).ensureBlock (inline)
+    7.68MB  2.27% 95.60%     7.68MB  2.27%  github.com/klauspost/compress/zstd.(*blockEnc).init
+    5.12MB  1.51% 97.11%     5.12MB  1.51%  github.com/klauspost/compress/zstd.encoderOptions.encoder
+    0.50MB  0.15% 97.26%    80.50MB 23.73%  github.com/agent-substrate/substrate/cmd/atelet/internal/ategcs.newParZstd
+    0.50MB  0.15% 97.41%     2.54MB  0.75%  google.golang.org/protobuf/internal/filetype.Builder.Build
+         0     0% 97.41%       10MB  2.95%  encoding/binary.Read
+         0     0% 97.41%   176.31MB 51.97%  github.com/agent-substrate/substrate/cmd/atelet/internal/ategcs.(*parZstd).worker
+         0     0% 97.41%    58.83MB 17.34%  github.com/agent-substrate/substrate/cmd/atelet/internal/ategcs.BenchmarkReadSparseZstd
+         0     0% 97.41%    96.83MB 28.54%  github.com/agent-substrate/substrate/cmd/atelet/internal/ategcs.BenchmarkWriteSparseZstd
+         0     0% 97.41%    10.50MB  3.10%  github.com/agent-substrate/substrate/cmd/atelet/internal/ategcs.readSparseZstd
+         0     0% 97.41%    80.50MB 23.73%  github.com/agent-substrate/substrate/cmd/atelet/internal/ategcs.writeSparseZstd
+         0     0% 97.41%    10.50MB  3.10%  github.com/klauspost/compress/zstd.(*Decoder).Read
+         0     0% 97.41%    10.50MB  3.10%  github.com/klauspost/compress/zstd.(*Decoder).nextBlock
+         0     0% 97.41%    10.50MB  3.10%  github.com/klauspost/compress/zstd.(*Decoder).nextBlockSync
+         0     0% 97.41%   142.31MB 41.95%  github.com/klauspost/compress/zstd.(*Encoder).EncodeAll
+         0     0% 97.41%   137.19MB 40.44%  github.com/klauspost/compress/zstd.(*Encoder).encodeAll
+         0     0% 97.41%     5.12MB  1.51%  github.com/klauspost/compress/zstd.(*Encoder).initialize
+         0     0% 97.41%      128MB 37.73%  github.com/klauspost/compress/zstd.(*fastBase).addBlock
+         0     0% 97.41%     7.68MB  2.27%  github.com/klauspost/compress/zstd.(*fastBase).resetBase
+         0     0% 97.41%      128MB 37.73%  github.com/klauspost/compress/zstd.(*fastEncoder).Encode
+         0     0% 97.41%     7.68MB  2.27%  github.com/klauspost/compress/zstd.(*fastEncoder).Reset
+         0     0% 97.41%     2.04MB   0.6%  google.golang.org/protobuf/internal/filedesc.Builder.Build
+         0     0% 97.41%       10MB  2.95%  io.ReadAtLeast
+         0     0% 97.41%       10MB  2.95%  io.ReadFull (inline)
+         0     0% 97.41%     4.61MB  1.36%  runtime.doInit
+         0     0% 97.41%     4.61MB  1.36%  runtime.doInit1
