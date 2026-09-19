@@ -1,0 +1,37 @@
+File: tarutil.test
+Build ID: 5357fa83a8829f4c0d40f820e8be6d8547c2dd88
+Type: alloc_space
+Time: 2026-09-19 01:20:59 UTC
+Showing nodes accounting for 7329.70kB, 100% of 7329.70kB total
+Showing top 30 nodes out of 68
+      flat  flat%   sum%        cum   cum%
+ 1184.27kB 16.16% 16.16%  1184.27kB 16.16%  runtime/pprof.StartCPUProfile
+ 1024.09kB 13.97% 30.13%  1024.09kB 13.97%  os.newFile
+     513kB  7.00% 37.13%      513kB  7.00%  runtime.mallocgc
+  512.11kB  6.99% 44.11%   512.11kB  6.99%  archive/tar.FileInfoHeader
+  512.10kB  6.99% 51.10%   512.10kB  6.99%  os.lstatNolog
+  512.03kB  6.99% 58.09%   512.03kB  6.99%  golang.org/x/sys/unix.ByteSliceFromString
+  512.02kB  6.99% 65.07%  1024.03kB 13.97%  os.rootStat
+  512.02kB  6.99% 72.06%   512.02kB  6.99%  testing.(*B).ResetTimer
+  512.02kB  6.99% 79.04%   512.02kB  6.99%  os.splitPathInRoot
+  512.01kB  6.99% 86.03%   512.01kB  6.99%  archive/tar.(*Reader).handleRegularFile (inline)
+  512.01kB  6.99% 93.01%   512.01kB  6.99%  io.LimitReader (inline)
+  512.01kB  6.99%   100%   512.01kB  6.99%  syscall.ByteSliceFromString
+         0     0%   100%  1024.02kB 13.97%  archive/tar.(*Reader).Next
+         0     0%   100%  1024.02kB 13.97%  archive/tar.(*Reader).next
+         0     0%   100%   512.01kB  6.99%  archive/tar.discard
+         0     0%   100%  1536.18kB 20.96%  github.com/agent-substrate/substrate/internal/tarutil.BenchmarkCreate
+         0     0%   100%  3584.23kB 48.90%  github.com/agent-substrate/substrate/internal/tarutil.BenchmarkExtract
+         0     0%   100%  2560.34kB 34.93%  github.com/agent-substrate/substrate/internal/tarutil.Create (inline)
+         0     0%   100%  2560.34kB 34.93%  github.com/agent-substrate/substrate/internal/tarutil.CreateFiltered
+         0     0%   100%  2560.07kB 34.93%  github.com/agent-substrate/substrate/internal/tarutil.Extract
+         0     0%   100%   512.05kB  6.99%  github.com/agent-substrate/substrate/internal/tarutil.copyFileInto
+         0     0%   100%  1536.05kB 20.96%  github.com/agent-substrate/substrate/internal/tarutil.extractEntry
+         0     0%   100%   512.03kB  6.99%  github.com/agent-substrate/substrate/internal/tarutil.readOverlayXattrs
+         0     0%   100%  1024.03kB 13.97%  github.com/agent-substrate/substrate/internal/tarutil.replaceExisting
+         0     0%   100%   512.02kB  6.99%  github.com/agent-substrate/substrate/internal/tarutil.restoreMeta
+         0     0%   100%  2560.34kB 34.93%  github.com/agent-substrate/substrate/internal/tarutil.writeTree
+         0     0%   100%  2048.29kB 27.95%  github.com/agent-substrate/substrate/internal/tarutil.writeTree.func1
+         0     0%   100%   512.03kB  6.99%  golang.org/x/sys/unix.BytePtrFromString (inline)
+         0     0%   100%   512.03kB  6.99%  golang.org/x/sys/unix.Llistxattr
+         0     0%   100%   512.01kB  6.99%  internal/syscall/unix.Fstatat

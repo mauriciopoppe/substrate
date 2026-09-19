@@ -1,0 +1,37 @@
+File: ch.test
+Build ID: 1cf736f6d8ad9b625a570afbc439a664f541cba5
+Type: alloc_space
+Time: 2026-09-19 01:20:56 UTC
+Showing nodes accounting for 78.54MB, 100% of 78.54MB total
+Showing top 30 nodes out of 40
+      flat  flat%   sum%        cum   cum%
+   71.88MB 91.52% 91.52%    71.88MB 91.52%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.fill (inline)
+    3.47MB  4.42% 95.94%     3.47MB  4.42%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.init.func1
+    1.16MB  1.47% 97.41%     1.16MB  1.47%  runtime/pprof.StartCPUProfile
+    1.03MB  1.31% 98.73%     1.03MB  1.31%  regexp.(*bitState).reset
+    0.50MB  0.64% 99.36%     0.50MB  0.64%  runtime.mallocgc
+    0.50MB  0.64%   100%     0.50MB  0.64%  testing.(*B).ResetTimer
+         0     0%   100%    33.16MB 42.22%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.BenchmarkCopySparseRegions
+         0     0%   100%    42.19MB 53.72%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.BenchmarkMergeDeltaIntoBase
+         0     0%   100%     3.47MB  4.42%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.cloneFile
+         0     0%   100%     3.47MB  4.42%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.copySparseRegions
+         0     0%   100%     2.69MB  3.42%  main.main
+         0     0%   100%     1.03MB  1.31%  regexp.(*Regexp).MatchString (inline)
+         0     0%   100%     1.03MB  1.31%  regexp.(*Regexp).backtrack
+         0     0%   100%     1.03MB  1.31%  regexp.(*Regexp).doMatch (inline)
+         0     0%   100%     1.03MB  1.31%  regexp.(*Regexp).find
+         0     0%   100%     0.50MB  0.64%  runtime.allocm
+         0     0%   100%     2.69MB  3.42%  runtime.main
+         0     0%   100%     0.50MB  0.64%  runtime.mstart
+         0     0%   100%     0.50MB  0.64%  runtime.mstart0
+         0     0%   100%     0.50MB  0.64%  runtime.mstart1
+         0     0%   100%     0.50MB  0.64%  runtime.newm
+         0     0%   100%     0.50MB  0.64%  runtime.newobject
+         0     0%   100%     0.50MB  0.64%  runtime.resetspinning
+         0     0%   100%     0.50MB  0.64%  runtime.schedule
+         0     0%   100%     0.50MB  0.64%  runtime.startm
+         0     0%   100%     0.50MB  0.64%  runtime.wakep
+         0     0%   100%     3.47MB  4.42%  sync.(*Pool).Get
+         0     0%   100%     1.03MB  1.31%  testing.(*B).Run
+         0     0%   100%    38.83MB 49.44%  testing.(*B).launch
+         0     0%   100%    36.52MB 46.50%  testing.(*B).run1.func1
