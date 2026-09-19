@@ -1,0 +1,38 @@
+File: ch.test
+Build ID: 7e5dab877a02d8666a12abdfeb0afd299f2e1b33
+Type: cpu
+Time: 2026-09-19 01:39:16 UTC
+Duration: 451.69ms, Total samples = 300ms (66.42%)
+Showing nodes accounting for 300ms, 100% of 300ms total
+Showing top 30 nodes out of 40
+      flat  flat%   sum%        cum   cum%
+     220ms 73.33% 73.33%      220ms 73.33%  internal/runtime/syscall/linux.Syscall6
+      80ms 26.67%   100%       80ms 26.67%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.fill (inline)
+         0     0%   100%      140ms 46.67%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.BenchmarkCopySparseRegions
+         0     0%   100%      150ms 50.00%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.BenchmarkMergeDeltaIntoBase
+         0     0%   100%       90ms 30.00%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.cloneFile
+         0     0%   100%      120ms 40.00%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.copySparseRegions
+         0     0%   100%       30ms 10.00%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.writeSparseTmpl
+         0     0%   100%      120ms 40.00%  golang.org/x/sys/unix.CopyFileRange
+         0     0%   100%       10ms  3.33%  internal/poll.(*FD).Fsync
+         0     0%   100%       10ms  3.33%  internal/poll.(*FD).Fsync.func1 (inline)
+         0     0%   100%       20ms  6.67%  internal/poll.(*FD).Pwrite
+         0     0%   100%       10ms  3.33%  internal/poll.ignoringEINTR (inline)
+         0     0%   100%       10ms  3.33%  internal/syscall/unix.Unlinkat
+         0     0%   100%       10ms  3.33%  os.(*File).Sync
+         0     0%   100%       20ms  6.67%  os.(*File).WriteAt
+         0     0%   100%       20ms  6.67%  os.(*File).pwrite (inline)
+         0     0%   100%       60ms 20.00%  os.Remove
+         0     0%   100%       60ms 20.00%  os.Remove.func1 (inline)
+         0     0%   100%       10ms  3.33%  os.RemoveAll
+         0     0%   100%       70ms 23.33%  os.ignoringEINTR (inline)
+         0     0%   100%       10ms  3.33%  os.removeAll
+         0     0%   100%       10ms  3.33%  os.removeAllFrom
+         0     0%   100%       10ms  3.33%  os.removefileat (inline)
+         0     0%   100%       10ms  3.33%  os.removefileat.func1 (inline)
+         0     0%   100%       10ms  3.33%  syscall.Fsync
+         0     0%   100%       20ms  6.67%  syscall.Pwrite (inline)
+         0     0%   100%      220ms 73.33%  syscall.RawSyscall6
+         0     0%   100%       80ms 26.67%  syscall.Syscall
+         0     0%   100%      140ms 46.67%  syscall.Syscall6
+         0     0%   100%       60ms 20.00%  syscall.Unlink (inline)

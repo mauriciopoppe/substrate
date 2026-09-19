@@ -1,0 +1,38 @@
+File: ch.test
+Build ID: 7e5dab877a02d8666a12abdfeb0afd299f2e1b33
+Type: cpu
+Time: 2026-09-19 01:39:11 UTC
+Duration: 449.60ms, Total samples = 290ms (64.50%)
+Showing nodes accounting for 290ms, 100% of 290ms total
+Showing top 30 nodes out of 53
+      flat  flat%   sum%        cum   cum%
+     200ms 68.97% 68.97%      200ms 68.97%  internal/runtime/syscall/linux.Syscall6
+      70ms 24.14% 93.10%       80ms 27.59%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.fill (inline)
+      10ms  3.45% 96.55%       10ms  3.45%  runtime.futex
+      10ms  3.45%   100%       10ms  3.45%  runtime.memclrNoHeapPointers
+         0     0%   100%      140ms 48.28%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.BenchmarkCopySparseRegions
+         0     0%   100%      140ms 48.28%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.BenchmarkMergeDeltaIntoBase
+         0     0%   100%       10ms  3.45%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.MergeDeltaIntoBase
+         0     0%   100%       80ms 27.59%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.cloneFile
+         0     0%   100%      130ms 44.83%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.copySparseRegions
+         0     0%   100%       30ms 10.34%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.writeSparseTmpl
+         0     0%   100%      130ms 44.83%  golang.org/x/sys/unix.CopyFileRange
+         0     0%   100%       10ms  3.45%  internal/poll.(*FD).Fsync
+         0     0%   100%       10ms  3.45%  internal/poll.(*FD).Fsync.func1 (inline)
+         0     0%   100%       20ms  6.90%  internal/poll.(*FD).Pwrite
+         0     0%   100%       10ms  3.45%  internal/poll.ignoringEINTR (inline)
+         0     0%   100%       10ms  3.45%  internal/syscall/unix.Unlinkat
+         0     0%   100%       10ms  3.45%  os.(*File).Sync
+         0     0%   100%       20ms  6.90%  os.(*File).WriteAt
+         0     0%   100%       20ms  6.90%  os.(*File).pwrite (inline)
+         0     0%   100%       40ms 13.79%  os.Remove
+         0     0%   100%       40ms 13.79%  os.Remove.func1 (inline)
+         0     0%   100%       10ms  3.45%  os.RemoveAll
+         0     0%   100%       50ms 17.24%  os.ignoringEINTR (inline)
+         0     0%   100%       10ms  3.45%  os.removeAll
+         0     0%   100%       10ms  3.45%  os.removeAllFrom
+         0     0%   100%       10ms  3.45%  os.removefileat (inline)
+         0     0%   100%       10ms  3.45%  os.removefileat.func1 (inline)
+         0     0%   100%       10ms  3.45%  runtime.exitsyscall
+         0     0%   100%       10ms  3.45%  runtime.exitsyscall.func3
+         0     0%   100%       10ms  3.45%  runtime.exitsyscallTryGetP

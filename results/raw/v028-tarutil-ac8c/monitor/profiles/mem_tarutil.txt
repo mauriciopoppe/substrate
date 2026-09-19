@@ -1,0 +1,37 @@
+File: tarutil.test
+Build ID: 2fd17c118190307f1fb2567dd4d570913181cc0e
+Type: alloc_space
+Time: 2026-09-19 01:39:19 UTC
+Showing nodes accounting for 10517.62kB, 100% of 10517.62kB total
+Showing top 30 nodes out of 75
+      flat  flat%   sum%        cum   cum%
+ 2048.44kB 19.48% 19.48%  3072.45kB 29.21%  archive/tar.(*Reader).readHeader
+ 1762.94kB 16.76% 36.24%  1762.94kB 16.76%  runtime/pprof.StartCPUProfile
+ 1024.20kB  9.74% 45.98%  1024.20kB  9.74%  os.lstatNolog
+ 1024.02kB  9.74% 55.71%  1024.02kB  9.74%  archive/tar.(*parser).parseString
+  544.67kB  5.18% 60.89%   544.67kB  5.18%  bufio.NewReaderSize (inline)
+  528.17kB  5.02% 65.91%   528.17kB  5.02%  regexp.(*bitState).reset
+     513kB  4.88% 70.79%      513kB  4.88%  runtime.mallocgc
+  512.08kB  4.87% 75.66%   512.08kB  4.87%  compress/gzip.NewWriterLevel
+  512.05kB  4.87% 80.53%   512.05kB  4.87%  os.newFile
+  512.02kB  4.87% 85.40%   512.02kB  4.87%  archive/tar.Header.allowedFormats
+  512.02kB  4.87% 90.26%   512.02kB  4.87%  testing.(*B).ResetTimer
+  512.01kB  4.87% 95.13%   512.01kB  4.87%  archive/tar.(*Reader).handleRegularFile (inline)
+  512.01kB  4.87%   100%   512.01kB  4.87%  syscall.ByteSliceFromString
+         0     0%   100%  3584.46kB 34.08%  archive/tar.(*Reader).Next
+         0     0%   100%  3584.46kB 34.08%  archive/tar.(*Reader).next
+         0     0%   100%   512.02kB  4.87%  archive/tar.(*Writer).WriteHeader
+         0     0%   100%  1024.02kB  9.74%  archive/tar.(*parser).parseNumeric
+         0     0%   100%  1024.02kB  9.74%  archive/tar.(*parser).parseOctal
+         0     0%   100%   512.02kB  4.87%  github.com/agent-substrate/substrate/internal/tarutil.BenchmarkCreate
+         0     0%   100%  5665.34kB 53.87%  github.com/agent-substrate/substrate/internal/tarutil.BenchmarkExtract
+         0     0%   100%  1536.23kB 14.61%  github.com/agent-substrate/substrate/internal/tarutil.Create (inline)
+         0     0%   100%  1536.23kB 14.61%  github.com/agent-substrate/substrate/internal/tarutil.CreateFiltered
+         0     0%   100%  4129.13kB 39.26%  github.com/agent-substrate/substrate/internal/tarutil.Extract
+         0     0%   100%   544.67kB  5.18%  github.com/agent-substrate/substrate/internal/tarutil.init.func2
+         0     0%   100%  1536.23kB 14.61%  github.com/agent-substrate/substrate/internal/tarutil.writeTree
+         0     0%   100%  1536.23kB 14.61%  github.com/agent-substrate/substrate/internal/tarutil.writeTree.func1
+         0     0%   100%   512.01kB  4.87%  internal/syscall/unix.Unlinkat
+         0     0%   100%  2291.10kB 21.78%  main.main
+         0     0%   100%  1024.20kB  9.74%  os.(*unixDirent).Info
+         0     0%   100%  1024.20kB  9.74%  os.Lstat

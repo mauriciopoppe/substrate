@@ -1,0 +1,32 @@
+File: ch.test
+Build ID: 7e5dab877a02d8666a12abdfeb0afd299f2e1b33
+Type: cpu
+Time: 2026-09-19 01:39:20 UTC
+Duration: 447.41ms, Total samples = 290ms (64.82%)
+Showing nodes accounting for 290ms, 100% of 290ms total
+      flat  flat%   sum%        cum   cum%
+     220ms 75.86% 75.86%      220ms 75.86%  internal/runtime/syscall/linux.Syscall6
+      70ms 24.14%   100%       70ms 24.14%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.fill (inline)
+         0     0%   100%      150ms 51.72%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.BenchmarkCopySparseRegions
+         0     0%   100%      140ms 48.28%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.BenchmarkMergeDeltaIntoBase
+         0     0%   100%       30ms 10.34%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.MergeDeltaIntoBase
+         0     0%   100%       70ms 24.14%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.cloneFile
+         0     0%   100%      130ms 44.83%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.copySparseRegions
+         0     0%   100%       40ms 13.79%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.writeSparseTmpl
+         0     0%   100%      130ms 44.83%  golang.org/x/sys/unix.CopyFileRange
+         0     0%   100%       40ms 13.79%  internal/poll.(*FD).Pwrite
+         0     0%   100%       40ms 13.79%  os.(*File).WriteAt
+         0     0%   100%       40ms 13.79%  os.(*File).pwrite (inline)
+         0     0%   100%       50ms 17.24%  os.Remove
+         0     0%   100%       50ms 17.24%  os.Remove.func1 (inline)
+         0     0%   100%       50ms 17.24%  os.ignoringEINTR (inline)
+         0     0%   100%       40ms 13.79%  syscall.Pwrite (inline)
+         0     0%   100%      220ms 75.86%  syscall.RawSyscall6
+         0     0%   100%       50ms 17.24%  syscall.Syscall
+         0     0%   100%      170ms 58.62%  syscall.Syscall6
+         0     0%   100%       50ms 17.24%  syscall.Unlink (inline)
+         0     0%   100%       40ms 13.79%  syscall.pwrite
+         0     0%   100%       50ms 17.24%  syscall.unlinkat
+         0     0%   100%      200ms 68.97%  testing.(*B).launch
+         0     0%   100%       90ms 31.03%  testing.(*B).run1.func1
+         0     0%   100%      290ms   100%  testing.(*B).runN

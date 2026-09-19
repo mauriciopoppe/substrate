@@ -47,6 +47,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"unsafe"
 
 	"golang.org/x/sys/unix"
 )
@@ -71,6 +72,10 @@ var (
 var copyBufPool = sync.Pool{New: func() any {
 	b := make([]byte, copyBufSize)
 	return &b
+}}
+
+var extractDirsPool = sync.Pool{New: func() any {
+	return make(map[string]*tar.Header)
 }}
 
 type writerOnly struct{ io.Writer }
@@ -305,7 +310,11 @@ func Extract(tarPath, dstDir string) error {
 	// Directories are created owner-writable so their children can be written
 	// even when the archive marks them read-only; the recorded modes and times
 	// are applied after every child exists (see restoreDirMeta).
-	dirs := map[string]*tar.Header{}
+	dirs := extractDirsPool.Get().(map[string]*tar.Header)
+	defer func() {
+		clear(dirs)
+		extractDirsPool.Put(dirs)
+	}()
 
 	// Buffered like the writer: most of an archive is 512-byte headers, each
 	// of which would otherwise be a read(2) of its own.
@@ -506,31 +515,32 @@ func restoreMeta(root *os.Root, name string, hdr *tar.Header) error {
 // and Lsetxattr does not follow a final-component symlink (nor do symlink
 // entries take this path: extractEntry never calls restoreMeta for them).
 func restoreOverlayXattrs(root *os.Root, name string, hdr *tar.Header) error {
-	var attrs map[string]string
-	for k, v := range hdr.PAXRecords {
-		if strings.HasPrefix(k, "SCHILY.xattr.user.") ||
-			strings.HasPrefix(k, "SCHILY.xattr.trusted.overlay.") {
-			if attrs == nil {
-				attrs = map[string]string{}
-			}
-			attrs[strings.TrimPrefix(k, "SCHILY.xattr.")] = v
-		}
-	}
-	if len(attrs) == 0 {
+	if len(hdr.PAXRecords) == 0 {
 		return nil
 	}
-	dir, base := filepath.Split(name)
-	if dir == "" {
-		dir = "."
-	}
-	parent, err := root.Open(filepath.Clean(dir))
-	if err != nil {
-		return fmt.Errorf("opening parent directory of %q to restore xattrs: %w", name, err)
-	}
-	defer parent.Close()
-	for attr, val := range attrs {
-		target := fmt.Sprintf("/proc/self/fd/%d/%s", parent.Fd(), base)
-		if err := unix.Lsetxattr(target, attr, []byte(val), 0); err != nil {
+	var parent *os.File
+	var target string
+	for k, v := range hdr.PAXRecords {
+		if !strings.HasPrefix(k, "SCHILY.xattr.user.") &&
+			!strings.HasPrefix(k, "SCHILY.xattr.trusted.overlay.") {
+			continue
+		}
+		if parent == nil {
+			dir, base := filepath.Split(name)
+			if dir == "" {
+				dir = "."
+			}
+			var err error
+			parent, err = root.Open(filepath.Clean(dir))
+			if err != nil {
+				return fmt.Errorf("opening parent directory of %q to restore xattrs: %w", name, err)
+			}
+			defer parent.Close()
+			target = fmt.Sprintf("/proc/self/fd/%d/%s", parent.Fd(), base)
+		}
+		attr := strings.TrimPrefix(k, "SCHILY.xattr.")
+		valBytes := unsafe.Slice(unsafe.StringData(v), len(v))
+		if err := unix.Lsetxattr(target, attr, valBytes, 0); err != nil {
 			return fmt.Errorf("restoring xattr %q on %q: %w", attr, name, err)
 		}
 	}
