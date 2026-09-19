@@ -80,10 +80,26 @@ mine:gce_ssh() {
 if [ -f "${SCRIPT_DIR}/.venv/bin/activate" ]; then
   source "${SCRIPT_DIR}/.venv/bin/activate"
 else
-  echo "Initializing Python virtual environment..."
-  python3 -m venv "${SCRIPT_DIR}/.venv"
-  touch "${SCRIPT_DIR}/.venv/DONT_FOLLOW_SYMLINKS_WHEN_TRAVERSING_THIS_DIRECTORY_VIA_A_RECURSIVE_TARGET_PATTERN"
-  touch "${SCRIPT_DIR}/.venv/bin/DONT_FOLLOW_SYMLINKS_WHEN_TRAVERSING_THIS_DIRECTORY_VIA_A_RECURSIVE_TARGET_PATTERN"
-  source "${SCRIPT_DIR}/.venv/bin/activate"
-  python3 -m pip install optuna pyyaml --quiet -i https://pypi.org/simple
+  # Discover main checkout root from worktrees
+  GIT_COMMON_DIR="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null || git rev-parse --git-dir 2>/dev/null || true)"
+  if [ -n "$GIT_COMMON_DIR" ]; then
+    MAIN_REPO_ROOT="$(cd "${GIT_COMMON_DIR}/.." && pwd)"
+  else
+    MAIN_REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  fi
+
+  if [ -f "${MAIN_REPO_ROOT}/.apo/.venv/bin/activate" ] && [ "${SCRIPT_DIR}" != "${MAIN_REPO_ROOT}/.apo" ]; then
+    ln -snf "${MAIN_REPO_ROOT}/.apo/.venv" "${SCRIPT_DIR}/.venv"
+    source "${SCRIPT_DIR}/.venv/bin/activate"
+  elif [ -f "${MAIN_REPO_ROOT}/.venv/bin/activate" ] && [ "${SCRIPT_DIR}" != "${MAIN_REPO_ROOT}" ]; then
+    ln -snf "${MAIN_REPO_ROOT}/.venv" "${SCRIPT_DIR}/.venv"
+    source "${SCRIPT_DIR}/.venv/bin/activate"
+  else
+    echo "Initializing Python virtual environment..."
+    python3 -m venv "${SCRIPT_DIR}/.venv"
+    touch "${SCRIPT_DIR}/.venv/DONT_FOLLOW_SYMLINKS_WHEN_TRAVERSING_THIS_DIRECTORY_VIA_A_RECURSIVE_TARGET_PATTERN"
+    touch "${SCRIPT_DIR}/.venv/bin/DONT_FOLLOW_SYMLINKS_WHEN_TRAVERSING_THIS_DIRECTORY_VIA_A_RECURSIVE_TARGET_PATTERN"
+    source "${SCRIPT_DIR}/.venv/bin/activate"
+    python3 -m pip install optuna pyyaml --quiet -i https://pypi.org/simple
+  fi
 fi
