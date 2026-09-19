@@ -5,6 +5,7 @@ scratch/
 tmp/
 .worktrees/
 optuna_study.db*
+stack*.env
 
 # WorkQueue ephemera & locks
 results/state.json
