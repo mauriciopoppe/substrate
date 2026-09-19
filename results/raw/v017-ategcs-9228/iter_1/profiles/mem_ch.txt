@@ -1,0 +1,37 @@
+File: ch.test
+Build ID: e547a888bf8ae5c65f9d5b2c775594aedbe73f28
+Type: alloc_space
+Time: 2026-09-18 14:05:48 UTC
+Showing nodes accounting for 79.75MB, 100% of 79.75MB total
+Showing top 30 nodes out of 57
+      flat  flat%   sum%        cum   cum%
+   69.57MB 87.23% 87.23%    69.57MB 87.23%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.fill (inline)
+    5.78MB  7.25% 94.48%     5.78MB  7.25%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.init.func1
+    1.16MB  1.45% 95.93%     1.16MB  1.45%  runtime/pprof.StartCPUProfile
+       1MB  1.26% 97.18%        1MB  1.26%  runtime.mallocgc
+    0.67MB  0.84% 98.03%     0.67MB  0.84%  compress/flate.(*fastGen).addBlock
+    0.57MB  0.71% 98.74%     0.57MB  0.71%  compress/flate.newFastEnc (inline)
+    0.50MB  0.63% 99.37%     0.50MB  0.63%  os.init.func1
+    0.50MB  0.63%   100%     0.50MB  0.63%  compress/gzip.NewWriterLevel
+         0     0%   100%     0.67MB  0.84%  compress/flate.(*Writer).Close (inline)
+         0     0%   100%     0.67MB  0.84%  compress/flate.(*compressor).close
+         0     0%   100%     0.67MB  0.84%  compress/flate.(*compressor).deflateFast
+         0     0%   100%     0.57MB  0.71%  compress/flate.(*compressor).init
+         0     0%   100%     0.67MB  0.84%  compress/flate.(*fastEncL1).encode
+         0     0%   100%     0.57MB  0.71%  compress/flate.NewWriter (inline)
+         0     0%   100%     0.67MB  0.84%  compress/gzip.(*Writer).Close
+         0     0%   100%     0.57MB  0.71%  compress/gzip.(*Writer).Write
+         0     0%   100%    34.32MB 43.03%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.BenchmarkCopySparseRegions
+         0     0%   100%    41.03MB 51.45%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.BenchmarkMergeDeltaIntoBase
+         0     0%   100%     5.78MB  7.25%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.cloneFile
+         0     0%   100%     5.78MB  7.25%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.copySparseRegions
+         0     0%   100%     1.16MB  1.45%  main.main
+         0     0%   100%     0.50MB  0.63%  os.(*File).Readdirnames
+         0     0%   100%     0.50MB  0.63%  os.(*File).readdir
+         0     0%   100%     0.50MB  0.63%  os.RemoveAll
+         0     0%   100%     0.50MB  0.63%  os.removeAll
+         0     0%   100%     0.50MB  0.63%  os.removeAllFrom
+         0     0%   100%     0.50MB  0.63%  runtime.(*gcControllerState).enlistWorker
+         0     0%   100%        1MB  1.26%  runtime.allocm
+         0     0%   100%     0.50MB  0.63%  runtime.gcBgMarkWorker.func2
+         0     0%   100%     0.50MB  0.63%  runtime.gcDrain

@@ -1,0 +1,38 @@
+File: tarutil.test
+Build ID: 58ed552f8a4cd8547bdccc622ccf958aa215e0cd
+Type: cpu
+Time: 2026-09-18 13:58:47 UTC
+Duration: 145.71ms, Total samples = 100ms (68.63%)
+Showing nodes accounting for 100ms, 100% of 100ms total
+Showing top 30 nodes out of 83
+      flat  flat%   sum%        cum   cum%
+      80ms 80.00% 80.00%       80ms 80.00%  internal/runtime/syscall/linux.Syscall6
+      10ms 10.00% 90.00%       10ms 10.00%  archive/tar.(*block).computeChecksum (inline)
+      10ms 10.00%   100%       10ms 10.00%  internal/runtime/atomic.(*Uint32).CompareAndSwap (inline)
+         0     0%   100%       10ms 10.00%  archive/tar.(*Reader).Next
+         0     0%   100%       10ms 10.00%  archive/tar.(*Reader).next
+         0     0%   100%       10ms 10.00%  archive/tar.(*Reader).readHeader
+         0     0%   100%       10ms 10.00%  archive/tar.(*block).getFormat
+         0     0%   100%       10ms 10.00%  github.com/agent-substrate/substrate/internal/tarutil.BenchmarkCreate
+         0     0%   100%       70ms 70.00%  github.com/agent-substrate/substrate/internal/tarutil.BenchmarkExtract
+         0     0%   100%       20ms 20.00%  github.com/agent-substrate/substrate/internal/tarutil.Create (inline)
+         0     0%   100%       20ms 20.00%  github.com/agent-substrate/substrate/internal/tarutil.CreateFiltered
+         0     0%   100%       50ms 50.00%  github.com/agent-substrate/substrate/internal/tarutil.Extract
+         0     0%   100%       10ms 10.00%  github.com/agent-substrate/substrate/internal/tarutil.copyFileInto
+         0     0%   100%       40ms 40.00%  github.com/agent-substrate/substrate/internal/tarutil.extractEntry
+         0     0%   100%       10ms 10.00%  github.com/agent-substrate/substrate/internal/tarutil.lchownEntry
+         0     0%   100%       30ms 30.00%  github.com/agent-substrate/substrate/internal/tarutil.restoreMeta
+         0     0%   100%       20ms 20.00%  github.com/agent-substrate/substrate/internal/tarutil.writeTree
+         0     0%   100%       20ms 20.00%  github.com/agent-substrate/substrate/internal/tarutil.writeTree.func1
+         0     0%   100%       10ms 10.00%  internal/poll.(*FD).Write
+         0     0%   100%       10ms 10.00%  internal/poll.ignoringEINTRIO (inline)
+         0     0%   100%       20ms 20.00%  internal/syscall/unix.Fchmodat
+         0     0%   100%       20ms 20.00%  internal/syscall/unix.Openat
+         0     0%   100%       20ms 20.00%  internal/syscall/unix.Unlinkat
+         0     0%   100%       10ms 10.00%  os.(*File).Write
+         0     0%   100%       10ms 10.00%  os.(*File).write (inline)
+         0     0%   100%       20ms 20.00%  os.(*Root).Chmod (inline)
+         0     0%   100%       10ms 10.00%  os.(*Root).Lchown (inline)
+         0     0%   100%       10ms 10.00%  os.(*Root).OpenFile
+         0     0%   100%       10ms 10.00%  os.(*unixDirent).Info
+         0     0%   100%       10ms 10.00%  os.Lstat

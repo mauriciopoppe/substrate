@@ -1,0 +1,38 @@
+File: ch.test
+Build ID: 42636dca5e548bb08e3fc53a12c06cb9cbf8c0bf
+Type: cpu
+Time: 2026-09-18 13:58:49 UTC
+Duration: 443.14ms, Total samples = 340ms (76.73%)
+Showing nodes accounting for 340ms, 100% of 340ms total
+Showing top 30 nodes out of 58
+      flat  flat%   sum%        cum   cum%
+     250ms 73.53% 73.53%      250ms 73.53%  internal/runtime/syscall/linux.Syscall6
+      80ms 23.53% 97.06%       90ms 26.47%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.fill (inline)
+      10ms  2.94%   100%       10ms  2.94%  runtime.memclrNoHeapPointers
+         0     0%   100%      170ms 50.00%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.BenchmarkCopySparseRegions
+         0     0%   100%      160ms 47.06%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.BenchmarkMergeDeltaIntoBase
+         0     0%   100%       10ms  2.94%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.MergeDeltaIntoBase
+         0     0%   100%      110ms 32.35%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.cloneFile
+         0     0%   100%      170ms 50.00%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.copySparseRegions
+         0     0%   100%       40ms 11.76%  github.com/agent-substrate/substrate/cmd/ateom-microvm/internal/ch.writeSparseTmpl
+         0     0%   100%       10ms  2.94%  internal/poll.(*FD).Fsync
+         0     0%   100%       10ms  2.94%  internal/poll.(*FD).Fsync.func1 (inline)
+         0     0%   100%       30ms  8.82%  internal/poll.(*FD).Pwrite
+         0     0%   100%       30ms  8.82%  internal/poll.(*FD).Read
+         0     0%   100%      140ms 41.18%  internal/poll.(*FD).Write
+         0     0%   100%       10ms  2.94%  internal/poll.ignoringEINTR (inline)
+         0     0%   100%      170ms 50.00%  internal/poll.ignoringEINTRIO (inline)
+         0     0%   100%       10ms  2.94%  internal/syscall/unix.Unlinkat
+         0     0%   100%       30ms  8.82%  io.ReadAtLeast
+         0     0%   100%       30ms  8.82%  io.ReadFull (inline)
+         0     0%   100%       30ms  8.82%  os.(*File).Read
+         0     0%   100%       10ms  2.94%  os.(*File).Sync
+         0     0%   100%      140ms 41.18%  os.(*File).Write
+         0     0%   100%       30ms  8.82%  os.(*File).WriteAt
+         0     0%   100%       30ms  8.82%  os.(*File).pwrite (inline)
+         0     0%   100%       30ms  8.82%  os.(*File).read (inline)
+         0     0%   100%      140ms 41.18%  os.(*File).write (inline)
+         0     0%   100%       30ms  8.82%  os.Remove
+         0     0%   100%       30ms  8.82%  os.Remove.func1 (inline)
+         0     0%   100%       10ms  2.94%  os.RemoveAll
+         0     0%   100%       40ms 11.76%  os.ignoringEINTR (inline)

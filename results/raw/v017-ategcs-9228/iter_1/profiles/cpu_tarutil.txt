@@ -1,0 +1,38 @@
+File: tarutil.test
+Build ID: a7e4acebebe9548735d5c2f02dc81e856eb6451d
+Type: cpu
+Time: 2026-09-18 14:05:51 UTC
+Duration: 146.41ms, Total samples = 90ms (61.47%)
+Showing nodes accounting for 90ms, 100% of 90ms total
+Showing top 30 nodes out of 65
+      flat  flat%   sum%        cum   cum%
+      70ms 77.78% 77.78%       70ms 77.78%  internal/runtime/syscall/linux.Syscall6
+      10ms 11.11% 88.89%       10ms 11.11%  internal/filepathlite.(*lazybuf).append (inline)
+      10ms 11.11%   100%       10ms 11.11%  runtime.getMCache (inline)
+         0     0%   100%       20ms 22.22%  github.com/agent-substrate/substrate/internal/tarutil.BenchmarkCreate
+         0     0%   100%       70ms 77.78%  github.com/agent-substrate/substrate/internal/tarutil.BenchmarkExtract
+         0     0%   100%       20ms 22.22%  github.com/agent-substrate/substrate/internal/tarutil.Create (inline)
+         0     0%   100%       20ms 22.22%  github.com/agent-substrate/substrate/internal/tarutil.CreateFiltered
+         0     0%   100%       40ms 44.44%  github.com/agent-substrate/substrate/internal/tarutil.Extract
+         0     0%   100%       10ms 11.11%  github.com/agent-substrate/substrate/internal/tarutil.copyFileInto
+         0     0%   100%       40ms 44.44%  github.com/agent-substrate/substrate/internal/tarutil.extractEntry
+         0     0%   100%       20ms 22.22%  github.com/agent-substrate/substrate/internal/tarutil.restoreMeta
+         0     0%   100%       20ms 22.22%  github.com/agent-substrate/substrate/internal/tarutil.writeTree
+         0     0%   100%       10ms 11.11%  github.com/agent-substrate/substrate/internal/tarutil.writeTree.func1
+         0     0%   100%       10ms 11.11%  internal/filepathlite.Clean
+         0     0%   100%       10ms 11.11%  internal/poll.(*FD).Close
+         0     0%   100%       10ms 11.11%  internal/poll.(*FD).decref
+         0     0%   100%       10ms 11.11%  internal/poll.(*FD).destroy
+         0     0%   100%       10ms 11.11%  internal/poll.(*SysFile).destroy (inline)
+         0     0%   100%       20ms 22.22%  internal/syscall/unix.Openat
+         0     0%   100%       20ms 22.22%  internal/syscall/unix.Unlinkat
+         0     0%   100%       10ms 11.11%  os.(*File).Close
+         0     0%   100%       20ms 22.22%  os.(*Root).Chmod (inline)
+         0     0%   100%       20ms 22.22%  os.(*Root).OpenFile
+         0     0%   100%       10ms 11.11%  os.(*file).close
+         0     0%   100%       10ms 11.11%  os.OpenFile
+         0     0%   100%       20ms 22.22%  os.RemoveAll (inline)
+         0     0%   100%       10ms 11.11%  os.WriteFile
+         0     0%   100%       10ms 11.11%  os.doInRoot[go.shape.int]
+         0     0%   100%       20ms 22.22%  os.doInRoot[go.shape.struct {}]
+         0     0%   100%       10ms 11.11%  os.doInRoot[go.shape.struct {}].func1

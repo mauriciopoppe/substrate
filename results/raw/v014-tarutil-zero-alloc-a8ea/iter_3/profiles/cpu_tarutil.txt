@@ -1,0 +1,38 @@
+File: tarutil.test
+Build ID: 58ed552f8a4cd8547bdccc622ccf958aa215e0cd
+Type: cpu
+Time: 2026-09-18 13:58:56 UTC
+Duration: 146.27ms, Total samples = 100ms (68.37%)
+Showing nodes accounting for 100ms, 100% of 100ms total
+Showing top 30 nodes out of 74
+      flat  flat%   sum%        cum   cum%
+      70ms 70.00% 70.00%       70ms 70.00%  internal/runtime/syscall/linux.Syscall6
+      10ms 10.00% 80.00%       30ms 30.00%  os.doInRoot[go.shape.struct {}]
+      10ms 10.00% 90.00%       10ms 10.00%  runtime.procyieldAsm
+      10ms 10.00%   100%       10ms 10.00%  syscall.write
+         0     0%   100%       30ms 30.00%  github.com/agent-substrate/substrate/internal/tarutil.BenchmarkCreate
+         0     0%   100%       60ms 60.00%  github.com/agent-substrate/substrate/internal/tarutil.BenchmarkExtract
+         0     0%   100%       10ms 10.00%  github.com/agent-substrate/substrate/internal/tarutil.Create (inline)
+         0     0%   100%       10ms 10.00%  github.com/agent-substrate/substrate/internal/tarutil.CreateFiltered
+         0     0%   100%       40ms 40.00%  github.com/agent-substrate/substrate/internal/tarutil.Extract
+         0     0%   100%       40ms 40.00%  github.com/agent-substrate/substrate/internal/tarutil.extractEntry
+         0     0%   100%       30ms 30.00%  github.com/agent-substrate/substrate/internal/tarutil.restoreMeta
+         0     0%   100%       10ms 10.00%  github.com/agent-substrate/substrate/internal/tarutil.writeTree
+         0     0%   100%       20ms 20.00%  internal/poll.(*FD).Close
+         0     0%   100%       10ms 10.00%  internal/poll.(*FD).Write
+         0     0%   100%       20ms 20.00%  internal/poll.(*FD).decref
+         0     0%   100%       20ms 20.00%  internal/poll.(*FD).destroy
+         0     0%   100%       20ms 20.00%  internal/poll.(*SysFile).destroy (inline)
+         0     0%   100%       10ms 10.00%  internal/poll.ignoringEINTRIO (inline)
+         0     0%   100%       20ms 20.00%  internal/syscall/unix.Fchmodat
+         0     0%   100%       10ms 10.00%  internal/syscall/unix.Openat
+         0     0%   100%       10ms 10.00%  internal/syscall/unix.Unlinkat
+         0     0%   100%       20ms 20.00%  os.(*File).Close (partial-inline)
+         0     0%   100%       10ms 10.00%  os.(*File).Write
+         0     0%   100%       10ms 10.00%  os.(*File).write (inline)
+         0     0%   100%       30ms 30.00%  os.(*Root).Chmod (inline)
+         0     0%   100%       10ms 10.00%  os.(*Root).OpenFile
+         0     0%   100%       20ms 20.00%  os.(*file).close
+         0     0%   100%       10ms 10.00%  os.OpenFile
+         0     0%   100%       10ms 10.00%  os.ReadDir
+         0     0%   100%       10ms 10.00%  os.RemoveAll (inline)

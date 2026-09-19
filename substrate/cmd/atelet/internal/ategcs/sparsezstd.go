@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sync"
 
 	"github.com/klauspost/compress/zstd"
 	"golang.org/x/sys/unix"
@@ -129,6 +130,13 @@ func writeSparseZstd(dst io.Writer, src *os.File) (logical, dataBytes int64, err
 	return size, dataBytes, nil
 }
 
+var zstdDecoderPool = sync.Pool{
+	New: func() any {
+		dec, _ := zstd.NewReader(nil, zstd.WithDecoderConcurrency(1))
+		return dec
+	},
+}
+
 // readSparseZstd decodes the sparse-extent format into dst, which becomes a sparse
 // file (the holes between extents are never written). src must be positioned just
 // AFTER the magic (the caller reads + dispatches on it). dst is truncated to the
@@ -142,11 +150,12 @@ func readSparseZstd(dst *os.File, src io.Reader) (logical int64, err error) {
 		return 0, fmt.Errorf("unsupported sparse snapshot format version %d (this build supports %d)", ver, sparseVersion)
 	}
 
-	zr, err := zstd.NewReader(src, zstd.WithDecoderConcurrency(1))
-	if err != nil {
+	zr := zstdDecoderPool.Get().(*zstd.Decoder)
+	if err := zr.Reset(src); err != nil {
+		zstdDecoderPool.Put(zr)
 		return 0, err
 	}
-	defer zr.Close()
+	defer zstdDecoderPool.Put(zr)
 
 	var size int64
 	if err := binary.Read(zr, binary.LittleEndian, &size); err != nil {

@@ -73,15 +73,34 @@ var copyBufPool = sync.Pool{New: func() any {
 	return &b
 }}
 
+type writerOnly struct{ io.Writer }
+
+func (w *writerOnly) Write(p []byte) (int, error) { return w.Writer.Write(p) }
+
+type readerOnly struct{ io.Reader }
+
+func (r *readerOnly) Read(p []byte) (int, error) { return r.Reader.Read(p) }
+
+type copyState struct {
+	w writerOnly
+	r readerOnly
+}
+
+var copyStatePool = sync.Pool{New: func() any { return new(copyState) }}
+
 // copyPooled masks the fast-path interfaces so io.CopyBuffer uses the pooled buffer.
 func copyPooled(dst io.Writer, src io.Reader) (int64, error) {
 	bp := copyBufPool.Get().(*[]byte)
 	defer copyBufPool.Put(bp)
-	return io.CopyBuffer(writerOnly{dst}, readerOnly{src}, *bp)
+	cs := copyStatePool.Get().(*copyState)
+	cs.w.Writer = dst
+	cs.r.Reader = src
+	n, err := io.CopyBuffer(&cs.w, &cs.r, *bp)
+	cs.w.Writer = nil
+	cs.r.Reader = nil
+	copyStatePool.Put(cs)
+	return n, err
 }
-
-type writerOnly struct{ io.Writer }
-type readerOnly struct{ io.Reader }
 
 // Create writes a tar archive of srcDir's contents to tarPath. Entry names are
 // relative to srcDir, so extracting into another directory reproduces the tree.
@@ -321,7 +340,7 @@ func Extract(tarPath, dstDir string) error {
 
 // extractEntry materializes one archive entry under root.
 func extractEntry(root *os.Root, tr *tar.Reader, hdr *tar.Header, name string, dirs map[string]*tar.Header) error {
-	mode := hdr.FileInfo().Mode().Perm()
+	mode := os.FileMode(hdr.Mode).Perm()
 
 	switch hdr.Typeflag {
 	case tar.TypeDir:
@@ -441,7 +460,17 @@ func restoreDirMeta(root *os.Root, dirs map[string]*tar.Header) error {
 // workload's files — and a running workload can set them on its own data
 // anyway, so carrying them across a suspend/resume grants it nothing new.
 func restoredMode(hdr *tar.Header) os.FileMode {
-	return hdr.FileInfo().Mode() & (fs.ModePerm | fs.ModeSetuid | fs.ModeSetgid | fs.ModeSticky)
+	m := os.FileMode(hdr.Mode) & fs.ModePerm
+	if hdr.Mode&04000 != 0 {
+		m |= fs.ModeSetuid
+	}
+	if hdr.Mode&02000 != 0 {
+		m |= fs.ModeSetgid
+	}
+	if hdr.Mode&01000 != 0 {
+		m |= fs.ModeSticky
+	}
+	return m
 }
 
 // restoreMeta applies ownership, mode, and modification time to an extracted

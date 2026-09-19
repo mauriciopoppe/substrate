@@ -1,0 +1,159 @@
+{
+  "status": "COMPLETED",
+  "iterations": 3,
+  "median_iteration_index": 2,
+  "metrics": {
+    "composite_ns_per_op": 47416250.0,
+    "composite_bytes_per_op": 22959102.0,
+    "composite_allocs_per_op": 14066.0,
+    "BenchmarkMergeDeltaIntoBase_ns_per_op": 2093223.0,
+    "BenchmarkMergeDeltaIntoBase_bytes_per_op": 2448.0,
+    "BenchmarkMergeDeltaIntoBase_allocs_per_op": 27.0,
+    "BenchmarkCopySparseRegions_ns_per_op": 7198219.0,
+    "BenchmarkCopySparseRegions_bytes_per_op": 208.0,
+    "BenchmarkCopySparseRegions_allocs_per_op": 1.0,
+    "BenchmarkWriteSparseZstd_ns_per_op": 11458730.0,
+    "BenchmarkWriteSparseZstd_bytes_per_op": 22182926.0,
+    "BenchmarkWriteSparseZstd_allocs_per_op": 177.0,
+    "BenchmarkReadSparseZstd_ns_per_op": 15712618.0,
+    "BenchmarkReadSparseZstd_bytes_per_op": 131619.0,
+    "BenchmarkReadSparseZstd_allocs_per_op": 20.0,
+    "BenchmarkExtract_ns_per_op": 7161468.0,
+    "BenchmarkExtract_bytes_per_op": 396649.0,
+    "BenchmarkExtract_allocs_per_op": 9542.0,
+    "BenchmarkCreate_ns_per_op": 3791992.0,
+    "BenchmarkCreate_bytes_per_op": 245252.0,
+    "BenchmarkCreate_allocs_per_op": 4299.0
+  },
+  "constraints": {
+    "benchmark_failures": 0
+  },
+  "benchmarks": {
+    "BenchmarkMergeDeltaIntoBase": {
+      "iterations": 5,
+      "ns_per_op": 2093223.0,
+      "bytes_per_op": 2448.0,
+      "allocs_per_op": 27.0
+    },
+    "BenchmarkCopySparseRegions": {
+      "iterations": 5,
+      "ns_per_op": 7198219.0,
+      "bytes_per_op": 208.0,
+      "allocs_per_op": 1.0
+    },
+    "BenchmarkWriteSparseZstd": {
+      "iterations": 5,
+      "ns_per_op": 11458730.0,
+      "bytes_per_op": 22182926.0,
+      "allocs_per_op": 177.0
+    },
+    "BenchmarkReadSparseZstd": {
+      "iterations": 5,
+      "ns_per_op": 15712618.0,
+      "bytes_per_op": 131619.0,
+      "allocs_per_op": 20.0
+    },
+    "BenchmarkExtract": {
+      "iterations": 5,
+      "ns_per_op": 7161468.0,
+      "bytes_per_op": 396649.0,
+      "allocs_per_op": 9542.0
+    },
+    "BenchmarkCreate": {
+      "iterations": 5,
+      "ns_per_op": 3791992.0,
+      "bytes_per_op": 245252.0,
+      "allocs_per_op": 4299.0
+    }
+  },
+  "profiling_summary": {},
+  "iteration_breakdown": [
+    {
+      "iteration": 3,
+      "metrics": {
+        "composite_ns_per_op": 46795169.0,
+        "composite_bytes_per_op": 24149491.0,
+        "composite_allocs_per_op": 14070.0,
+        "BenchmarkMergeDeltaIntoBase_ns_per_op": 2206534.0,
+        "BenchmarkMergeDeltaIntoBase_bytes_per_op": 2448.0,
+        "BenchmarkMergeDeltaIntoBase_allocs_per_op": 27.0,
+        "BenchmarkCopySparseRegions_ns_per_op": 7090717.0,
+        "BenchmarkCopySparseRegions_bytes_per_op": 208.0,
+        "BenchmarkCopySparseRegions_allocs_per_op": 1.0,
+        "BenchmarkWriteSparseZstd_ns_per_op": 11129576.0,
+        "BenchmarkWriteSparseZstd_bytes_per_op": 22287326.0,
+        "BenchmarkWriteSparseZstd_allocs_per_op": 175.0,
+        "BenchmarkReadSparseZstd_ns_per_op": 15594284.0,
+        "BenchmarkReadSparseZstd_bytes_per_op": 1217652.0,
+        "BenchmarkReadSparseZstd_allocs_per_op": 27.0,
+        "BenchmarkExtract_ns_per_op": 7137664.0,
+        "BenchmarkExtract_bytes_per_op": 368742.0,
+        "BenchmarkExtract_allocs_per_op": 9541.0,
+        "BenchmarkCreate_ns_per_op": 3636394.0,
+        "BenchmarkCreate_bytes_per_op": 273115.0,
+        "BenchmarkCreate_allocs_per_op": 4299.0
+      },
+      "constraints": {
+        "benchmark_failures": 0
+      }
+    },
+    {
+      "iteration": 2,
+      "metrics": {
+        "composite_ns_per_op": 47416250.0,
+        "composite_bytes_per_op": 22959102.0,
+        "composite_allocs_per_op": 14066.0,
+        "BenchmarkMergeDeltaIntoBase_ns_per_op": 2093223.0,
+        "BenchmarkMergeDeltaIntoBase_bytes_per_op": 2448.0,
+        "BenchmarkMergeDeltaIntoBase_allocs_per_op": 27.0,
+        "BenchmarkCopySparseRegions_ns_per_op": 7198219.0,
+        "BenchmarkCopySparseRegions_bytes_per_op": 208.0,
+        "BenchmarkCopySparseRegions_allocs_per_op": 1.0,
+        "BenchmarkWriteSparseZstd_ns_per_op": 11458730.0,
+        "BenchmarkWriteSparseZstd_bytes_per_op": 22182926.0,
+        "BenchmarkWriteSparseZstd_allocs_per_op": 177.0,
+        "BenchmarkReadSparseZstd_ns_per_op": 15712618.0,
+        "BenchmarkReadSparseZstd_bytes_per_op": 131619.0,
+        "BenchmarkReadSparseZstd_allocs_per_op": 20.0,
+        "BenchmarkExtract_ns_per_op": 7161468.0,
+        "BenchmarkExtract_bytes_per_op": 396649.0,
+        "BenchmarkExtract_allocs_per_op": 9542.0,
+        "BenchmarkCreate_ns_per_op": 3791992.0,
+        "BenchmarkCreate_bytes_per_op": 245252.0,
+        "BenchmarkCreate_allocs_per_op": 4299.0
+      },
+      "constraints": {
+        "benchmark_failures": 0
+      }
+    },
+    {
+      "iteration": 1,
+      "metrics": {
+        "composite_ns_per_op": 47800820.0,
+        "composite_bytes_per_op": 24200790.0,
+        "composite_allocs_per_op": 14071.0,
+        "BenchmarkMergeDeltaIntoBase_ns_per_op": 2134089.0,
+        "BenchmarkMergeDeltaIntoBase_bytes_per_op": 2448.0,
+        "BenchmarkMergeDeltaIntoBase_allocs_per_op": 27.0,
+        "BenchmarkCopySparseRegions_ns_per_op": 7432151.0,
+        "BenchmarkCopySparseRegions_bytes_per_op": 208.0,
+        "BenchmarkCopySparseRegions_allocs_per_op": 1.0,
+        "BenchmarkWriteSparseZstd_ns_per_op": 11099037.0,
+        "BenchmarkWriteSparseZstd_bytes_per_op": 22287521.0,
+        "BenchmarkWriteSparseZstd_allocs_per_op": 176.0,
+        "BenchmarkReadSparseZstd_ns_per_op": 16555506.0,
+        "BenchmarkReadSparseZstd_bytes_per_op": 1214673.0,
+        "BenchmarkReadSparseZstd_allocs_per_op": 25.0,
+        "BenchmarkExtract_ns_per_op": 7071429.0,
+        "BenchmarkExtract_bytes_per_op": 381843.0,
+        "BenchmarkExtract_allocs_per_op": 9541.0,
+        "BenchmarkCreate_ns_per_op": 3508608.0,
+        "BenchmarkCreate_bytes_per_op": 314097.0,
+        "BenchmarkCreate_allocs_per_op": 4301.0
+      },
+      "constraints": {
+        "benchmark_failures": 0
+      }
+    }
+  ]
+}

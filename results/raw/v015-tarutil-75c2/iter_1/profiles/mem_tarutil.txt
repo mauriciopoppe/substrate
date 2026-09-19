@@ -1,0 +1,37 @@
+File: tarutil.test
+Build ID: 5c7eea3494404485ed013c3a44cbccf26deeeec6
+Type: alloc_space
+Time: 2026-09-18 14:03:29 UTC
+Showing nodes accounting for 10502.56kB, 100% of 10502.56kB total
+Showing top 30 nodes out of 100
+      flat  flat%   sum%        cum   cum%
+ 1536.19kB 14.63% 14.63%  1536.19kB 14.63%  os.readlinkat
+ 1184.27kB 11.28% 25.90%  1184.27kB 11.28%  runtime/pprof.StartCPUProfile
+    1026kB  9.77% 35.67%     1026kB  9.77%  runtime.mallocgc
+ 1024.25kB  9.75% 45.42%  1024.25kB  9.75%  os.(*File).readdir
+ 1024.03kB  9.75% 55.17%  1024.03kB  9.75%  syscall.ByteSliceFromString
+  578.66kB  5.51% 60.68%   578.66kB  5.51%  github.com/agent-substrate/substrate/internal/tarutil.init.func3
+  544.67kB  5.19% 65.87%   544.67kB  5.19%  bufio.NewWriterSize (inline)
+  512.11kB  4.88% 70.75%   512.11kB  4.88%  archive/tar.FileInfoHeader
+  512.10kB  4.88% 75.62%  1024.12kB  9.75%  os.lstatNolog
+  512.10kB  4.88% 80.50%   512.10kB  4.88%  os.lstatatWithName
+  512.08kB  4.88% 85.37%   512.08kB  4.88%  compress/gzip.NewWriterLevel
+  512.05kB  4.88% 90.25%   512.05kB  4.88%  os.newFile
+  512.03kB  4.88% 95.12%   512.03kB  4.88%  internal/bytealg.MakeNoZero
+  512.02kB  4.88%   100%   512.02kB  4.88%  os.splitPathInRoot
+         0     0%   100%  2560.34kB 24.38%  github.com/agent-substrate/substrate/internal/tarutil.BenchmarkCreate
+         0     0%   100%  4707.74kB 44.82%  github.com/agent-substrate/substrate/internal/tarutil.BenchmarkExtract
+         0     0%   100%  3617.10kB 34.44%  github.com/agent-substrate/substrate/internal/tarutil.Create (inline)
+         0     0%   100%  3617.10kB 34.44%  github.com/agent-substrate/substrate/internal/tarutil.CreateFiltered
+         0     0%   100%  3650.98kB 34.76%  github.com/agent-substrate/substrate/internal/tarutil.Extract
+         0     0%   100%   512.05kB  4.88%  github.com/agent-substrate/substrate/internal/tarutil.copyFileInto
+         0     0%   100%   578.66kB  5.51%  github.com/agent-substrate/substrate/internal/tarutil.copyPooled
+         0     0%   100%  3138.91kB 29.89%  github.com/agent-substrate/substrate/internal/tarutil.extractEntry
+         0     0%   100%   544.67kB  5.19%  github.com/agent-substrate/substrate/internal/tarutil.init.func1
+         0     0%   100%  1024.11kB  9.75%  github.com/agent-substrate/substrate/internal/tarutil.replaceExisting
+         0     0%   100%   512.06kB  4.88%  github.com/agent-substrate/substrate/internal/tarutil.restoreDirMeta
+         0     0%   100%  1536.19kB 14.63%  github.com/agent-substrate/substrate/internal/tarutil.restoreMeta
+         0     0%   100%  3072.44kB 29.25%  github.com/agent-substrate/substrate/internal/tarutil.writeTree
+         0     0%   100%  2048.28kB 19.50%  github.com/agent-substrate/substrate/internal/tarutil.writeTree.func1
+         0     0%   100%   512.01kB  4.88%  internal/syscall/unix.Openat
+         0     0%   100%  1184.27kB 11.28%  main.main

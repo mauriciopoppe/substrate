@@ -1,0 +1,37 @@
+File: tarutil.test
+Build ID: 5c7eea3494404485ed013c3a44cbccf26deeeec6
+Type: alloc_space
+Time: 2026-09-18 14:03:38 UTC
+Showing nodes accounting for 14409.96kB, 100% of 14409.96kB total
+Showing top 30 nodes out of 113
+      flat  flat%   sum%        cum   cum%
+ 1536.03kB 10.66% 10.66%  1536.03kB 10.66%  os.splitPathInRoot
+ 1184.27kB  8.22% 18.88%  1184.27kB  8.22%  runtime/pprof.StartCPUProfile
+ 1024.22kB  7.11% 25.99%  1024.22kB  7.11%  archive/tar.FileInfoHeader
+ 1024.02kB  7.11% 33.09%  1024.02kB  7.11%  archive/tar.(*parser).parseString
+  688.56kB  4.78% 37.87%   688.56kB  4.78%  compress/flate.(*fastGen).addBlock
+  655.29kB  4.55% 42.42%   655.29kB  4.55%  compress/flate.NewWriter
+  578.66kB  4.02% 46.43%   578.66kB  4.02%  github.com/agent-substrate/substrate/internal/tarutil.init.func3
+  544.67kB  3.78% 50.21%   544.67kB  3.78%  bufio.NewWriterSize
+  514.63kB  3.57% 53.78%   514.63kB  3.57%  runtime/pprof.(*protobuf).string
+     514kB  3.57% 57.35%      514kB  3.57%  regexp.(*bitState).reset
+     513kB  3.56% 60.91%      513kB  3.56%  runtime.mallocgc
+  512.11kB  3.55% 64.47%  1536.12kB 10.66%  archive/tar.(*Reader).readHeader
+  512.10kB  3.55% 68.02%  1024.13kB  7.11%  os.lstatNolog
+  512.10kB  3.55% 71.57%   512.10kB  3.55%  os.lstatatWithName
+  512.08kB  3.55% 75.13%   512.08kB  3.55%  compress/gzip.NewWriterLevel
+  512.06kB  3.55% 78.68%   512.06kB  3.55%  os.readlinkat
+  512.03kB  3.55% 82.23%   512.03kB  3.55%  golang.org/x/sys/unix.ByteSliceFromString
+  512.03kB  3.55% 85.79%   512.03kB  3.55%  internal/bytealg.MakeNoZero
+  512.03kB  3.55% 89.34%   512.03kB  3.55%  os.newUnixDirent
+  512.03kB  3.55% 92.89%   512.03kB  3.55%  syscall.ByteSliceFromString
+  512.02kB  3.55% 96.45%   512.02kB  3.55%  testing.(*B).ResetTimer
+  512.01kB  3.55%   100%   512.01kB  3.55%  archive/tar.(*Writer).writeRawHeader
+         0     0%   100%  1536.12kB 10.66%  archive/tar.(*Reader).Next
+         0     0%   100%  1536.12kB 10.66%  archive/tar.(*Reader).next
+         0     0%   100%   512.01kB  3.55%  archive/tar.(*Writer).WriteHeader
+         0     0%   100%   512.01kB  3.55%  archive/tar.(*Writer).writeUSTARHeader
+         0     0%   100%  1024.02kB  7.11%  archive/tar.(*parser).parseNumeric
+         0     0%   100%  1024.02kB  7.11%  archive/tar.(*parser).parseOctal
+         0     0%   100%   688.56kB  4.78%  compress/flate.(*Writer).Close
+         0     0%   100%   688.56kB  4.78%  compress/flate.(*compressor).close
