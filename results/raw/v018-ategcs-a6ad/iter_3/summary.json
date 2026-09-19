@@ -21,7 +21,12 @@
     "BenchmarkExtract_allocs_per_op": 9140.0,
     "BenchmarkCreate_ns_per_op": 3551843.0,
     "BenchmarkCreate_bytes_per_op": 320964.0,
-    "BenchmarkCreate_allocs_per_op": 3902.0
+    "BenchmarkCreate_allocs_per_op": 3902.0,
+    "ch_ns_per_op": 10105712.0,
+    "ategcs_ns_per_op": 25445205.0,
+    "tarutil_ns_per_op": 10623139.0,
+    "total_bytes_per_op": 13268004.0,
+    "total_allocs_per_op": 13183.0
   },
   "constraints": {
     "benchmark_failures": 0

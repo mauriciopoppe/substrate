@@ -57,9 +57,23 @@ def parse_bench_output(log_path, results_dir, cpu_profile="", mem_profile=""):
         print("Error: No benchmark metrics parsed", file=sys.stderr)
         sys.exit(1)
 
-    # Primary metric: composite ns_per_op across the hotpaths
-    # Secondary metrics: bytes_per_op, allocs_per_op, individual benchmarks
+    # Subsystem grouping mappings
+    ch_benchmarks = ["BenchmarkMergeDeltaIntoBase", "BenchmarkCopySparseRegions"]
+    ategcs_benchmarks = ["BenchmarkWriteSparseZstd", "BenchmarkReadSparseZstd"]
+    tarutil_benchmarks = ["BenchmarkExtract", "BenchmarkCreate"]
+
+    ch_ns = sum(benchmarks[b]["ns_per_op"] for b in ch_benchmarks if b in benchmarks)
+    ategcs_ns = sum(benchmarks[b]["ns_per_op"] for b in ategcs_benchmarks if b in benchmarks)
+    tarutil_ns = sum(benchmarks[b]["ns_per_op"] for b in tarutil_benchmarks if b in benchmarks)
+
+    # Primary 5 metrics: Subsystem CPU latencies and Global Heap totals
     metrics = {
+        "ch_ns_per_op": ch_ns,
+        "ategcs_ns_per_op": ategcs_ns,
+        "tarutil_ns_per_op": tarutil_ns,
+        "total_bytes_per_op": total_bytes,
+        "total_allocs_per_op": total_allocs,
+        # Backward-compatible aliases
         "composite_ns_per_op": total_ns,
         "composite_bytes_per_op": total_bytes,
         "composite_allocs_per_op": total_allocs,

@@ -23,7 +23,12 @@
     "BenchmarkExtract_allocs_per_op": 9141.0,
     "BenchmarkCreate_ns_per_op": 3618492.0,
     "BenchmarkCreate_bytes_per_op": 279960.0,
-    "BenchmarkCreate_allocs_per_op": 3901.0
+    "BenchmarkCreate_allocs_per_op": 3901.0,
+    "ch_ns_per_op": 7401810.0,
+    "ategcs_ns_per_op": 25215863.0,
+    "tarutil_ns_per_op": 10728966.0,
+    "total_bytes_per_op": 12755561.0,
+    "total_allocs_per_op": 13184.0
   },
   "constraints": {
     "benchmark_failures": 0
@@ -94,7 +99,12 @@
         "BenchmarkExtract_allocs_per_op": 9140.0,
         "BenchmarkCreate_ns_per_op": 3564741.0,
         "BenchmarkCreate_bytes_per_op": 279966.0,
-        "BenchmarkCreate_allocs_per_op": 3901.0
+        "BenchmarkCreate_allocs_per_op": 3901.0,
+        "ch_ns_per_op": 7311479.0,
+        "ategcs_ns_per_op": 25014485.0,
+        "tarutil_ns_per_op": 10618366.0,
+        "total_bytes_per_op": 9185475.0,
+        "total_allocs_per_op": 13180.0
       },
       "constraints": {
         "benchmark_failures": 0
@@ -123,7 +133,12 @@
         "BenchmarkExtract_allocs_per_op": 9141.0,
         "BenchmarkCreate_ns_per_op": 3618492.0,
         "BenchmarkCreate_bytes_per_op": 279960.0,
-        "BenchmarkCreate_allocs_per_op": 3901.0
+        "BenchmarkCreate_allocs_per_op": 3901.0,
+        "ch_ns_per_op": 7401810.0,
+        "ategcs_ns_per_op": 25215863.0,
+        "tarutil_ns_per_op": 10728966.0,
+        "total_bytes_per_op": 12755561.0,
+        "total_allocs_per_op": 13184.0
       },
       "constraints": {
         "benchmark_failures": 0
@@ -152,7 +167,12 @@
         "BenchmarkExtract_allocs_per_op": 9141.0,
         "BenchmarkCreate_ns_per_op": 3892017.0,
         "BenchmarkCreate_bytes_per_op": 279960.0,
-        "BenchmarkCreate_allocs_per_op": 3901.0
+        "BenchmarkCreate_allocs_per_op": 3901.0,
+        "ch_ns_per_op": 7351687.0,
+        "ategcs_ns_per_op": 25352224.0,
+        "tarutil_ns_per_op": 10958922.0,
+        "total_bytes_per_op": 10893364.0,
+        "total_allocs_per_op": 13185.0
       },
       "constraints": {
         "benchmark_failures": 0

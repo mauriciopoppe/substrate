@@ -6,15 +6,23 @@ optimization:
     - substrate/cmd/atelet/internal/ategcs/
     - substrate/internal/tarutil/
   metrics:
-    - name: composite_ns_per_op
+    - name: ch_ns_per_op
       goal: minimize
-      min_improvement_pct: 5.0
+      min_improvement_pct: 3.0
       noise_tolerance_pct: 3.0
-    - name: composite_bytes_per_op
+    - name: ategcs_ns_per_op
+      goal: minimize
+      min_improvement_pct: 3.0
+      noise_tolerance_pct: 3.0
+    - name: tarutil_ns_per_op
+      goal: minimize
+      min_improvement_pct: 3.0
+      noise_tolerance_pct: 3.0
+    - name: total_bytes_per_op
       goal: minimize
       min_improvement_pct: 5.0
       noise_tolerance_pct: 1.0
-    - name: composite_allocs_per_op
+    - name: total_allocs_per_op
       goal: minimize
       min_improvement_pct: 5.0
       noise_tolerance_pct: 1.0
@@ -25,7 +33,7 @@ optimization:
 
 # Workload Optimization Objective: Substrate Core Hotpath Go Microbenchmarks
 
-Optimize the pure Go source code of the Agent Substrate runtime components (`cmd/ateom-microvm/internal/ch`, `cmd/atelet/internal/ategcs`, and `internal/tarutil`) to minimize CPU latency (`composite_ns_per_op`), heap allocation volume (`composite_bytes_per_op`), and heap allocation count (`composite_allocs_per_op`) across the snapshot and restore critical path.
+Optimize the pure Go source code of the Agent Substrate runtime components (`cmd/ateom-microvm/internal/ch`, `cmd/atelet/internal/ategcs`, and `internal/tarutil`) to minimize subsystem CPU latencies (`ch_ns_per_op`, `ategcs_ns_per_op`, `tarutil_ns_per_op`), total heap allocation volume (`total_bytes_per_op`), and total heap allocation count (`total_allocs_per_op`) across the snapshot and restore critical path.
 
 ## Benchmark Hotpaths Under Optimization
 The benchmark suite evaluates three primary components executed during actor suspend, snapshot upload, snapshot download, and actor resume:
@@ -40,9 +48,11 @@ The benchmark suite evaluates three primary components executed during actor sus
    - `BenchmarkCreate`: Tar archiving of directory trees while preserving file modes, device nodes, and xattrs.
 
 ## Target Objectives
-1. `composite_ns_per_op` (Minimize): Sum of CPU execution time per operation across the hotpaths.
-2. `composite_bytes_per_op` (Minimize): Total heap bytes allocated per operation.
-3. `composite_allocs_per_op` (Minimize): Total heap object allocations per operation.
+1. `ch_ns_per_op` (Minimize): CPU execution time per operation for sparse memory overlay merging.
+2. `ategcs_ns_per_op` (Minimize): CPU execution time per operation for sparse zstd extent compression and decompression.
+3. `tarutil_ns_per_op` (Minimize): CPU execution time per operation for rootfs upper layer packaging and extraction.
+4. `total_bytes_per_op` (Minimize): Total heap bytes allocated per operation across all benchmarks.
+5. `total_allocs_per_op` (Minimize): Total heap object allocations per operation across all benchmarks.
 
 ## Constraints
 - `benchmark_failures` == 0: All unit tests and benchmarks must pass cleanly in staged benchmark runs. Data integrity must be strictly maintained (all decoded streams and merged snapshots must be byte-exact).
