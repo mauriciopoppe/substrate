@@ -162,6 +162,7 @@ def parse_iteration_stats(iter_dir: str, test_name: str) -> Dict[str, Any]:
           "cpu_hotspots": cpu_hotspots,
           "cpu_profile_path": os.path.join(iter_dir, "profiles", "cpu.pb.gz"),
           "heap_profile_path": os.path.join(iter_dir, "profiles", "heap.pb.gz"),
+          "execution_trace_path": os.path.join(iter_dir, "profiles", "execution_trace.out"),
       },
       "raw_stats": raw_stats,
   }
@@ -632,6 +633,22 @@ def scrape_pprof_profiles(iter_dir: str, env: Dict[str, str], stop_event: thread
     except Exception as e:
       print(f"Background profiling: failed to scrape CPU profile: {e}")
 
+    if stop_event.is_set():
+      return
+
+    # Scrape Execution Trace for Perfetto (/debug/pprof/trace?seconds=10)
+    exec_trace_path = os.path.join(profiles_dir, "execution_trace.out")
+    try:
+      print(f"Background profiling: scraping 10s execution trace from http://localhost:{local_port}/debug/pprof/trace?seconds=10...")
+      req = urllib.request.Request(f"http://localhost:{local_port}/debug/pprof/trace?seconds=10")
+      with urllib.request.urlopen(req, timeout=20) as resp:
+        with open(exec_trace_path, "wb") as out_f:
+          out_f.write(resp.read())
+      print(f"Background profiling: saved execution trace to {exec_trace_path}")
+      print("Tip: View in Perfetto UI via 'go tool trace -http=:0 execution_trace.out' or at https://ui.perfetto.dev")
+    except Exception as e:
+      print(f"Background profiling: failed to scrape execution trace: {e}")
+
   finally:
     pf_proc.terminate()
     try:
@@ -856,26 +873,42 @@ metadata:
 
     subprocess.run(["kubectl", "delete", "job", job_name, "-n", "benchmarking"], env=env, check=False)
 
-    # Download stats from GCS
+    # Download stats from GCS (with retry loop as upload may complete right after job completion)
     print(f"Downloading benchmark results from GCS for Iteration {iter_num} ({run_tag})...")
     gcs_run_dir = ""
-    gcs_ls = subprocess.run(
-        ["gcloud", "storage", "ls", "--recursive", f"{dest}/runs/{test_name}/**/*{run_tag}/stats.csv"],
-        capture_output=True,
-        text=True,
-        env=env,
-        check=False,
-    )
-    if gcs_ls.returncode == 0 and gcs_ls.stdout.strip():
-      first_line = gcs_ls.stdout.strip().splitlines()[0]
-      gcs_run_dir = first_line.rsplit("/stats.csv", 1)[0]
+    for attempt in range(12):
+      gcs_ls = subprocess.run(
+          ["gcloud", "storage", "ls", "--recursive", f"{dest}/runs/{test_name}/**/{run_tag}/**/stats.csv"],
+          capture_output=True,
+          text=True,
+          env=env,
+          check=False,
+      )
+      if gcs_ls.returncode == 0 and gcs_ls.stdout.strip():
+        first_line = gcs_ls.stdout.strip().splitlines()[0]
+        gcs_run_dir = first_line.rsplit("/stats.csv", 1)[0]
+        break
+      # Fallback pattern without double wildcard
+      gcs_ls_fallback = subprocess.run(
+          f"gcloud storage ls --recursive '{dest}/runs/{test_name}/*/*/*{run_tag}*/stats.csv'",
+          shell=True,
+          capture_output=True,
+          text=True,
+          env=env,
+          check=False,
+      )
+      if gcs_ls_fallback.returncode == 0 and gcs_ls_fallback.stdout.strip():
+        first_line = gcs_ls_fallback.stdout.strip().splitlines()[0]
+        gcs_run_dir = first_line.rsplit("/stats.csv", 1)[0]
+        break
+      time.sleep(5)
 
     if gcs_run_dir:
       print(f"Found GCS run directory: {gcs_run_dir}")
       subprocess.run(["gcloud", "storage", "cp", "-r", f"{gcs_run_dir}/*", f"{iter_dir}/"], env=env, check=False)
     else:
       print(f"Fallback searching for any run files matching {run_tag}...")
-      fallback_src = f"{dest}/runs/{test_name}/*/*/*{run_tag}/*"
+      fallback_src = f"{dest}/runs/{test_name}/*/*/*{run_tag}*/*"
       subprocess.run(f"gcloud storage cp -r {fallback_src} '{iter_dir}/'", shell=True, env=env, check=False)
 
     # Parse iteration metrics
