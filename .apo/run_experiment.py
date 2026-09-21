@@ -20,7 +20,9 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import time
+import urllib.request
 from typing import Any, Dict, List, Optional, Tuple
 
 
@@ -475,6 +477,169 @@ spec:
 """
 
 
+def scrape_pprof_profiles(iter_dir: str, env: Dict[str, str], stop_event: threading.Event) -> None:
+  """Background worker that waits for the runner pod to start, then scrapes CPU and Heap profiles."""
+  profiles_dir = os.path.join(iter_dir, "profiles")
+  os.makedirs(profiles_dir, exist_ok=True)
+
+  # 1. Wait until runner pod is Running or stop_event is set
+  print("Background profiling: waiting for benchmark runner pod to be Running...")
+  pod_ready = False
+  for _ in range(60):
+    if stop_event.is_set():
+      return
+    res = subprocess.run(
+        [
+            "kubectl",
+            "get",
+            "pods",
+            "-n",
+            "benchmarking",
+            "-l",
+            "app=substrate-benchmark-runner",
+            "--field-selector=status.phase=Running",
+            "-o",
+            "jsonpath={.items[*].metadata.name}",
+        ],
+        capture_output=True,
+        text=True,
+        env=env,
+        check=False,
+    )
+    if res.returncode == 0 and res.stdout.strip():
+      pod_ready = True
+      break
+    time.sleep(2)
+
+  if not pod_ready or stop_event.is_set():
+    print("Background profiling: runner pod did not reach Running state before timeout/completion.")
+    return
+
+  # Allow workload to ramp up for a few seconds
+  for _ in range(5):
+    if stop_event.is_set():
+      return
+    time.sleep(1)
+
+  # 2. Select target for profiling: atenet-router pod (port 4040) or atelet pod (port 9090)
+  # Default to atenet-router first as it processes every wake request
+  target_pod = ""
+  target_port = 4040
+  res = subprocess.run(
+      [
+          "kubectl",
+          "get",
+          "pods",
+          "-n",
+          "ate-system",
+          "-l",
+          "app.kubernetes.io/name=atenet-router",
+          "--field-selector=status.phase=Running",
+          "-o",
+          "jsonpath={.items[0].metadata.name}",
+      ],
+      capture_output=True,
+      text=True,
+      env=env,
+      check=False,
+  )
+  if res.returncode == 0 and res.stdout.strip():
+    target_pod = res.stdout.strip()
+    target_port = 4040
+  else:
+    # Fallback to atelet
+    res_atelet = subprocess.run(
+        [
+            "kubectl",
+            "get",
+            "pods",
+            "-n",
+            "ate-system",
+            "-l",
+            "app.kubernetes.io/name=atelet",
+            "--field-selector=status.phase=Running",
+            "-o",
+            "jsonpath={.items[0].metadata.name}",
+        ],
+        capture_output=True,
+        text=True,
+        env=env,
+        check=False,
+    )
+    if res_atelet.returncode == 0 and res_atelet.stdout.strip():
+      target_pod = res_atelet.stdout.strip()
+      target_port = 9090
+
+  if not target_pod:
+    print("Background profiling: no active atenet-router or atelet pod found to profile.")
+    return
+
+  local_port = 14040 if target_port == 4040 else 19090
+  print(f"Background profiling: starting port-forward to {target_pod}:{target_port} on localhost:{local_port}...")
+  pf_proc = subprocess.Popen(
+      [
+          "kubectl",
+          "port-forward",
+          f"pod/{target_pod}",
+          f"{local_port}:{target_port}",
+          "-n",
+          "ate-system",
+      ],
+      env=env,
+      stdout=subprocess.DEVNULL,
+      stderr=subprocess.DEVNULL,
+  )
+
+  try:
+    time.sleep(2)
+    # Scrape Heap Profile
+    heap_path = os.path.join(profiles_dir, "heap.pb.gz")
+    try:
+      print(f"Background profiling: scraping heap profile from http://localhost:{local_port}/debug/pprof/heap...")
+      req = urllib.request.Request(f"http://localhost:{local_port}/debug/pprof/heap")
+      with urllib.request.urlopen(req, timeout=10) as resp:
+        with open(heap_path, "wb") as out_f:
+          out_f.write(resp.read())
+      print(f"Background profiling: saved heap profile to {heap_path}")
+    except Exception as e:
+      print(f"Background profiling: failed to scrape heap profile: {e}")
+
+    if stop_event.is_set():
+      return
+
+    # Scrape CPU Profile (30 seconds)
+    cpu_path = os.path.join(profiles_dir, "cpu.pb.gz")
+    try:
+      print(f"Background profiling: scraping 30s CPU profile from http://localhost:{local_port}/debug/pprof/profile?seconds=30...")
+      req = urllib.request.Request(f"http://localhost:{local_port}/debug/pprof/profile?seconds=30")
+      with urllib.request.urlopen(req, timeout=40) as resp:
+        with open(cpu_path, "wb") as out_f:
+          out_f.write(resp.read())
+      print(f"Background profiling: saved CPU profile to {cpu_path}")
+
+      # Generate cpu_top.txt using go tool pprof if go tool is available
+      cpu_top_path = os.path.join(profiles_dir, "cpu_top.txt")
+      pprof_top = subprocess.run(
+          ["go", "tool", "pprof", "-top", "-cum", cpu_path],
+          capture_output=True,
+          text=True,
+          check=False,
+      )
+      if pprof_top.returncode == 0 and pprof_top.stdout.strip():
+        with open(cpu_top_path, "w", encoding="utf-8") as f:
+          f.write(ppprof_top.stdout)
+        print(f"Background profiling: generated CPU top hotspots in {cpu_top_path}")
+    except Exception as e:
+      print(f"Background profiling: failed to scrape CPU profile: {e}")
+
+  finally:
+    pf_proc.terminate()
+    try:
+      pf_proc.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+      pf_proc.kill()
+
+
 def main() -> None:
   parser = argparse.ArgumentParser(description="Substrate E2E TTFI Benchmark Harness")
   parser.add_argument("positional_results_dir", nargs="?", default="", help="Results output directory")
@@ -637,6 +802,15 @@ metadata:
     print(f"Submitting benchmark runner Job {job_name} for Iteration {iter_num}...")
     subprocess.run(["kubectl", "apply", "-f", "-"], input=job_yaml, text=True, env=env, check=True)
 
+    # Launch background pprof scraping worker
+    stop_event = threading.Event()
+    scrape_thread = threading.Thread(
+        target=scrape_pprof_profiles,
+        args=(iter_dir, env, stop_event),
+        daemon=True,
+    )
+    scrape_thread.start()
+
     # Wait for Job to complete
     print(f"Waiting for benchmark runner Job {job_name} to complete...")
     job_timeout_secs = 600
@@ -650,6 +824,10 @@ metadata:
         f"--timeout={job_timeout_secs}s",
     ]
     wait_res = subprocess.run(wait_cmd, env=env, check=False)
+
+    # Signal stop to background profiling thread and join
+    stop_event.set()
+    scrape_thread.join(timeout=10)
 
     if wait_res.returncode != 0:
       print(f"Job {job_name} did not complete within {job_timeout_secs}s. Checking for failure...")

@@ -109,6 +109,8 @@ var (
 
 	drainDelay   = pflag.Duration("drain-delay", 0, "How long to keep accepting new RPCs after SIGTERM before starting the gRPC drain.")
 	drainTimeout = pflag.Duration("drain-timeout", 5*time.Minute, "Deadline for the graceful gRPC drain on shutdown. In-flight RPCs still running past it are forcefully cancelled.")
+
+	tracer = otel.Tracer("atelet")
 )
 
 func main() {
@@ -160,6 +162,7 @@ func main() {
 		Addr:          *metricsListenAddr,
 		Readiness:     readiness,
 		EnableHealthz: true,
+		EnablePprof:   true,
 	})
 
 	// The OTLP relay lets the ateom pods on this node export telemetry over a
@@ -998,7 +1001,9 @@ func (s *AteomHerder) Restore(ctx context.Context, req *ateletpb.RestoreRequest)
 	}
 
 	tMount := time.Now()
+	_, spanMount := tracer.Start(ctx, "Restore.MountExternalVolumes")
 	mountErr := s.mountExternalVolumes(ctx, actorUID, req.GetSpec().GetVolumes())
+	spanMount.End()
 	dMount = time.Since(tMount)
 	if mountErr != nil {
 		op.failedPhase = ateattr.SnapshotPhaseVolumeMount
@@ -1012,9 +1017,11 @@ func (s *AteomHerder) Restore(ctx context.Context, req *ateletpb.RestoreRequest)
 	// request no longer carries the sandbox config). Fetch the (small) manifest
 	// first — both the checkpoint download and the OCI/asset prep below need it.
 	tManifest := time.Now()
+	manifestCtx, spanManifest := tracer.Start(ctx, "Restore.FetchManifest")
 	manifestDone := false
 	defer func() {
 		if !manifestDone {
+			spanManifest.End()
 			dManifest = time.Since(tManifest)
 			op.failedPhase = ateattr.SnapshotPhaseManifestFetch
 		}
@@ -1030,7 +1037,7 @@ func (s *AteomHerder) Restore(ctx context.Context, req *ateletpb.RestoreRequest)
 		if err != nil {
 			return nil, ateerrors.CrashIfReason(ctx, err, ateerrors.ReasonInvalidObjectURL)
 		}
-		manifest, err := ategcs.FetchFromGCS(ctx, s.gcsClient, manifestURI)
+		manifest, err := ategcs.FetchFromGCS(manifestCtx, s.gcsClient, manifestURI)
 		if err != nil {
 			return nil, ateerrors.CrashIfReason(ctx, fmt.Errorf("while fetching snapshot manifest: %w", err), ateerrors.ReasonInvalidObjectURL, ateerrors.ReasonFailedGetExternalObject)
 		}
@@ -1079,6 +1086,7 @@ func (s *AteomHerder) Restore(ctx context.Context, req *ateletpb.RestoreRequest)
 			return nil, status.Errorf(codes.FailedPrecondition, "golden snapshot sandbox class %q does not match actor snapshot sandbox class %q", goldenRec.SandboxClass, sandboxRec.SandboxClass)
 		}
 	}
+	spanManifest.End()
 	dManifest = time.Since(tManifest)
 	manifestDone = true
 
@@ -1112,7 +1120,9 @@ func (s *AteomHerder) Restore(ctx context.Context, req *ateletpb.RestoreRequest)
 	g, gctx := errgroup.WithContext(ctx)
 	g.Go(func() (err error) {
 		t := time.Now()
+		gctx, spanDownload := tracer.Start(gctx, "Restore.DownloadCheckpoint")
 		defer func() {
+			spanDownload.End()
 			dDownload = time.Since(t)
 			downloadErr = err
 		}()
@@ -1160,14 +1170,18 @@ func (s *AteomHerder) Restore(ctx context.Context, req *ateletpb.RestoreRequest)
 	g.Go(func() (err error) {
 		defer func() { prepErr = err }()
 		tAssets := time.Now()
-		assetPaths, err = s.ensureSandboxAssets(gctx, runtimeRec)
+		assetsCtx, spanAssets := tracer.Start(gctx, "Restore.EnsureSandboxAssets")
+		assetPaths, err = s.ensureSandboxAssets(assetsCtx, runtimeRec)
+		spanAssets.End()
 		dAssets = time.Since(tAssets)
 		if err != nil {
 			prepFailedPhase = ateattr.SnapshotPhaseSandboxAssets
 			return ateerrors.CrashIfReason(ctx, err, ateerrors.ReasonFailedGetExternalObject, ateerrors.ReasonInvalidObjectURL, ateerrors.ReasonTerminalFileSystemError, ateerrors.ReasonInvalidSandboxAsset)
 		}
 		t := time.Now()
-		err = s.prepareOCIBundles(gctx, actorUID, actorRef, req.GetSpec(), runtimeRec.PauseImage, req.GetTargetAteomUid())
+		ociCtx, spanOCI := tracer.Start(gctx, "Restore.PrepareOCIBundles")
+		err = s.prepareOCIBundles(ociCtx, actorUID, actorRef, req.GetSpec(), runtimeRec.PauseImage, req.GetTargetAteomUid())
+		spanOCI.End()
 		dBundles = time.Since(t)
 		if err != nil {
 			prepFailedPhase = ateattr.SnapshotPhaseOCIUnpack
@@ -1201,7 +1215,8 @@ func (s *AteomHerder) Restore(ctx context.Context, req *ateletpb.RestoreRequest)
 	// The ateom_restore phase is opaque from here; ateom logs its own breakdown of
 	// this call as "Actor restore phases".
 	tAteom := time.Now()
-	_, err = client.RestoreWorkload(ctx, &ateompb.RestoreWorkloadRequest{
+	ateomCtx, spanAteom := tracer.Start(ctx, "Restore.AteomRestoreWorkload")
+	_, err = client.RestoreWorkload(ateomCtx, &ateompb.RestoreWorkloadRequest{
 		Atespace:              actorRef.Atespace,
 		ActorName:             actorRef.Name,
 		ActorTemplateAtespace: req.GetActorTemplateAtespace(),
@@ -1219,6 +1234,7 @@ func (s *AteomHerder) Restore(ctx context.Context, req *ateletpb.RestoreRequest)
 		// ateom restores from the shared dir and never fetches this URI.
 		GoldenSnapshotUri: req.GetGoldenSnapshotUri(),
 	})
+	spanAteom.End()
 	dAteom = time.Since(tAteom)
 	if err != nil {
 		// TODO: classify the errors returned by Ateom and crash the actor if needed.

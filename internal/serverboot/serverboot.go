@@ -25,6 +25,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/http/pprof"
 	"os"
 	"sync/atomic"
 
@@ -319,6 +320,8 @@ type MetricsServerOptions struct {
 	// EnableHealthz adds an always-200 /healthz for liveness probes,
 	// which must keep succeeding while a draining server fails /readyz.
 	EnableHealthz bool
+	// EnablePprof registers the net/http/pprof endpoints on the metrics mux.
+	EnablePprof bool
 }
 
 // StartMetricsServer runs an HTTP server exposing /metrics (Prometheus)
@@ -357,6 +360,13 @@ func metricsMux(opts MetricsServerOptions) *http.ServeMux {
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write([]byte("ok"))
 		})
+	}
+	if opts.EnablePprof {
+		mux.HandleFunc("/debug/pprof/", pprof.Index)
+		mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+		mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+		mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+		mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
 	}
 	return mux
 }

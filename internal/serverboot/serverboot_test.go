@@ -233,6 +233,18 @@ func TestHealthzAbsentUnlessEnabled(t *testing.T) {
 	}
 }
 
+func TestPprofEndpoints(t *testing.T) {
+	muxDisabled := metricsMux(MetricsServerOptions{EnablePprof: false})
+	if got := getCode(t, muxDisabled, "/debug/pprof/"); got != http.StatusNotFound {
+		t.Errorf("/debug/pprof/ when disabled = %d, want %d", got, http.StatusNotFound)
+	}
+
+	muxEnabled := metricsMux(MetricsServerOptions{EnablePprof: true})
+	if got := getCode(t, muxEnabled, "/debug/pprof/"); got != http.StatusOK {
+		t.Errorf("/debug/pprof/ when enabled = %d, want %d", got, http.StatusOK)
+	}
+}
+
 func TestInitMetricsPushOnlyHasNoPrometheusSurface(t *testing.T) {
 	mp, err := InitMetricsPushOnly(context.Background(), "test-pushonly")
 	if err != nil {
