@@ -31,6 +31,7 @@ import (
 
 	"github.com/agent-substrate/substrate/internal/ateinterceptors"
 	"github.com/agent-substrate/substrate/internal/benchmarking/boomer/boomerutil"
+	"github.com/agent-substrate/substrate/internal/benchmarking/boomer/dynconfig"
 	bmetrics "github.com/agent-substrate/substrate/internal/benchmarking/boomer/metrics"
 	"github.com/agent-substrate/substrate/internal/benchmarking/boomer/userclass"
 	gluttonpb "github.com/agent-substrate/substrate/internal/proto/glutton"
@@ -218,6 +219,10 @@ func (u *gluttonUser) create(ctx context.Context) error {
 }
 
 func (u *gluttonUser) resume(ctx context.Context) bool {
+	if !u.firstResume && u.cfg.Dyn.Load().ResumeMode == dynconfig.ResumeModeImplicit {
+		u.actorRunning = true
+		return true
+	}
 	metricName := "ResumeActor"
 	if u.firstResume {
 		metricName = "ResumeActorColdStart"
