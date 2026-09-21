@@ -1,0 +1,35 @@
+# Local environments & credentials
+.gcloud-config/
+.gcloud-config
+.kubeconfig*
+scratch/
+scratch
+tmp/
+tmp
+.worktrees/
+.worktrees
+.worktree/
+.worktree
+.venv/
+.venv
+**/.venv
+**/.venv/
+.worktree/**/.venv
+.worktrees/**/.venv
+__pycache__/
+*.pyc
+optuna_study.db*
+stack*.env
+
+# WorkQueue ephemera & operational state
+results/state.json
+results/.state.lock
+results/state_transitions.jsonl
+results/queue/
+results/scratch/
+results/test_dryrun/
+results/**/benchmark.pid
+validate_report.json
+*.test
+*.pprof
+*.pid
