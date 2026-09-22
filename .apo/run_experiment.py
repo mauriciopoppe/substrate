@@ -228,21 +228,6 @@ def build_perfetto_trace_from_benchmark(
   perfetto_trace_path = os.path.join(profiles_dir, 'perfetto_trace.json')
 
   traces_path = os.path.join(iter_dir, 'traces.txt')
-  track_metadata = [
-      {'name': 'process_name', 'ph': 'M', 'pid': 1, 'args': {'name': 'Substrate E2E TTFI Benchmark'}},
-      {'name': 'process_sort_index', 'ph': 'M', 'pid': 1, 'args': {'sort_index': 0}},
-      {'name': 'thread_name', 'ph': 'M', 'pid': 1, 'tid': 1, 'args': {'name': 'Macro Lifecycle'}},
-      {'name': 'thread_sort_index', 'ph': 'M', 'pid': 1, 'tid': 1, 'args': {'sort_index': 1}},
-      {'name': 'thread_name', 'ph': 'M', 'pid': 1, 'tid': 2, 'args': {'name': 'Client Request Spans'}},
-      {'name': 'thread_sort_index', 'ph': 'M', 'pid': 1, 'tid': 2, 'args': {'sort_index': 2}},
-      {'name': 'thread_name', 'ph': 'M', 'pid': 1, 'tid': 3, 'args': {'name': 'Router ExtProc'}},
-      {'name': 'thread_sort_index', 'ph': 'M', 'pid': 1, 'tid': 3, 'args': {'sort_index': 3}},
-      {'name': 'thread_name', 'ph': 'M', 'pid': 1, 'tid': 4, 'args': {'name': 'Control Plane (ate-api-server)'}},
-      {'name': 'thread_sort_index', 'ph': 'M', 'pid': 1, 'tid': 4, 'args': {'sort_index': 4}},
-      {'name': 'thread_name', 'ph': 'M', 'pid': 1, 'tid': 5, 'args': {'name': 'Worker Node & Storage (Ateom & GCS)'}},
-      {'name': 'thread_sort_index', 'ph': 'M', 'pid': 1, 'tid': 5, 'args': {'sort_index': 5}},
-  ]
-
   events: List[Dict[str, Any]] = []
   raw_client_spans: List[Dict[str, Any]] = []
   header_map: Optional[Dict[str, int]] = None
@@ -378,7 +363,9 @@ def build_perfetto_trace_from_benchmark(
       child_events.append(dict(ev))
       profile_events_by_episode[ep_key].append(dict(ev))
 
-  events.extend(child_events)
+  # Macro benchmark trace stays clean: only Macro Lifecycle and Client Request Spans.
+  # Server-tier spans (Router, Control Plane, Worker/Storage) are isolated in
+  # perfetto_cold_boot.json and perfetto_warm_boot.json.
 
   def fits_in_lane(slice_to_add: Dict[str, Any], lane_slices: List[Dict[str, Any]]) -> bool:
     s_start = slice_to_add['ts']
