@@ -222,11 +222,47 @@ def aggregate_iterations(results_dir: str, iterations: int) -> Dict[str, Any]:
     if os.path.exists(src):
       shutil.copy2(src, dst)
 
+  # Stage profiles into results/profiles and results/monitor/profile
   median_profiles_dir = os.path.join(median_iter_dir, "profiles")
   dst_profiles_dir = os.path.join(results_dir, "profiles")
+  monitor_profile_dir = os.path.join(results_dir, "monitor", "profile")
+  os.makedirs(monitor_profile_dir, exist_ok=True)
   if os.path.exists(median_profiles_dir):
     for pf in os.listdir(median_profiles_dir):
       shutil.copy2(os.path.join(median_profiles_dir, pf), os.path.join(dst_profiles_dir, pf))
+      shutil.copy2(os.path.join(median_profiles_dir, pf), os.path.join(monitor_profile_dir, pf))
+
+  # Stage node.yaml, events.json, and README.md into results/monitor/
+  median_monitor_dir = os.path.join(median_iter_dir, "monitor")
+  dst_monitor_dir = os.path.join(results_dir, "monitor")
+  if os.path.exists(median_monitor_dir):
+    for mf in os.listdir(median_monitor_dir):
+      if mf != "profile":
+        shutil.copy2(os.path.join(median_monitor_dir, mf), os.path.join(dst_monitor_dir, mf))
+
+  # Write monitor/README.md guide for agent evaluation
+  readme_content = f"""# Telemetry & Profile Index
+
+This directory contains execution telemetry and profiling artifacts collected during Substrate E2E TTFI benchmarking.
+Staged from Median iteration: `iter_{median_idx}`.
+
+## Recommended Agent Reading Order
+
+1. **`monitor/profile/perfetto_url.txt`**:
+   - Link and instructions to view the execution trace in Perfetto UI (https://ui.perfetto.dev).
+2. **`summary.json`**:
+   - Primary SLI metrics (`ttfi_p90_ms`, `ttfi_p95_ms`, error rate, OOMs).
+3. **`monitor/profile/go_cpu_top.txt`**:
+   - Go functions ranked by CPU time (router ExtProc, gRPC serialization, HTTP gateway).
+4. **`monitor/profile/go_mem_hotspots.txt`**:
+   - Memory allocation hotspots from heap profiling.
+5. **`monitor/profile/go_block_hotspots.txt`**:
+   - Mutex and channel blocking contention profiles.
+6. **`monitor/node.yaml` & `monitor/events.json`**:
+   - Kubernetes cluster node state and event log.
+"""
+  with open(os.path.join(dst_monitor_dir, "README.md"), "w", encoding="utf-8") as f:
+    f.write(readme_content)
 
   top_summary: Dict[str, Any] = {
       "status": "COMPLETED",
@@ -618,8 +654,9 @@ def scrape_pprof_profiles(iter_dir: str, env: Dict[str, str], stop_event: thread
           out_f.write(resp.read())
       print(f"Background profiling: saved CPU profile to {cpu_path}")
 
-      # Generate cpu_top.txt using go tool pprof if go tool is available
+      # Generate cpu_top.txt and go_cpu_top.txt using go tool pprof if go tool is available
       cpu_top_path = os.path.join(profiles_dir, "cpu_top.txt")
+      go_cpu_top_path = os.path.join(profiles_dir, "go_cpu_top.txt")
       pprof_top = subprocess.run(
           ["go", "tool", "pprof", "-top", "-cum", cpu_path],
           capture_output=True,
@@ -628,10 +665,48 @@ def scrape_pprof_profiles(iter_dir: str, env: Dict[str, str], stop_event: thread
       )
       if pprof_top.returncode == 0 and pprof_top.stdout.strip():
         with open(cpu_top_path, "w", encoding="utf-8") as f:
+          f.write(pprof_top.stdout)
+        with open(go_cpu_top_path, "w", encoding="utf-8") as f:
           f.write(ppprof_top.stdout)
         print(f"Background profiling: generated CPU top hotspots in {cpu_top_path}")
     except Exception as e:
       print(f"Background profiling: failed to scrape CPU profile: {e}")
+
+    # Generate go_mem_hotspots.txt from heap profile
+    if os.path.exists(heap_path):
+      go_mem_path = os.path.join(profiles_dir, "go_mem_hotspots.txt")
+      mem_top = subprocess.run(
+          ["go", "tool", "pprof", "-top", "-cum", "-alloc_space", heap_path],
+          capture_output=True,
+          text=True,
+          check=False,
+      )
+      if mem_top.returncode == 0 and mem_top.stdout.strip():
+        with open(go_mem_path, "w", encoding="utf-8") as f:
+          f.write(mem_top.stdout)
+
+    if stop_event.is_set():
+      return
+
+    # Scrape Block/Mutex Profile (/debug/pprof/block)
+    block_path = os.path.join(profiles_dir, "block.pb.gz")
+    try:
+      req = urllib.request.Request(f"http://localhost:{local_port}/debug/pprof/block")
+      with urllib.request.urlopen(req, timeout=10) as resp:
+        with open(block_path, "wb") as out_f:
+          out_f.write(resp.read())
+      go_block_path = os.path.join(profiles_dir, "go_block_hotspots.txt")
+      block_top = subprocess.run(
+          ["go", "tool", "pprof", "-top", "-cum", block_path],
+          capture_output=True,
+          text=True,
+          check=False,
+      )
+      if block_top.returncode == 0 and block_top.stdout.strip():
+        with open(go_block_path, "w", encoding="utf-8") as f:
+          f.write(block_top.stdout)
+    except Exception as e:
+      print(f"Background profiling: failed to scrape block profile: {e}")
 
     if stop_event.is_set():
       return
@@ -645,7 +720,10 @@ def scrape_pprof_profiles(iter_dir: str, env: Dict[str, str], stop_event: thread
         with open(exec_trace_path, "wb") as out_f:
           out_f.write(resp.read())
       print(f"Background profiling: saved execution trace to {exec_trace_path}")
-      print("Tip: View in Perfetto UI via 'go tool trace -http=:0 execution_trace.out' or at https://ui.perfetto.dev")
+      # Write perfetto_url.txt
+      perfetto_url_path = os.path.join(profiles_dir, "perfetto_url.txt")
+      with open(perfetto_url_path, "w", encoding="utf-8") as f:
+        f.write("https://ui.perfetto.dev/ (Upload execution_trace.out or run: go tool trace -http=:0 execution_trace.out)\n")
     except Exception as e:
       print(f"Background profiling: failed to scrape execution trace: {e}")
 
@@ -910,6 +988,30 @@ metadata:
       print(f"Fallback searching for any run files matching {run_tag}...")
       fallback_src = f"{dest}/runs/{test_name}/*/*/*{run_tag}*/*"
       subprocess.run(f"gcloud storage cp -r {fallback_src} '{iter_dir}/'", shell=True, env=env, check=False)
+
+    # Collect cluster telemetry into iter_dir/monitor
+    iter_monitor_dir = os.path.join(iter_dir, "monitor")
+    try:
+      # Dump benchmark node state
+      node_yaml_path = os.path.join(iter_monitor_dir, "node.yaml")
+      with open(node_yaml_path, "w", encoding="utf-8") as f:
+        subprocess.run(["kubectl", "get", "nodes", "-o", "yaml"], stdout=f, env=env, check=False)
+
+      # Dump cluster events
+      events_json_path = os.path.join(iter_monitor_dir, "events.json")
+      with open(events_json_path, "w", encoding="utf-8") as f:
+        subprocess.run(["kubectl", "get", "events", "-A", "-o", "json"], stdout=f, env=env, check=False)
+
+      # Extract node dmesg into dmesg.txt
+      dmesg_path = os.path.join(iter_dir, "dmesg.txt")
+      subprocess.run(
+          f"kubectl get pods -n ate-system -l app.kubernetes.io/name=atelet -o jsonpath='{{.items[0].metadata.name}}' | xargs -I{{}} kubectl logs -n ate-system {{}} --tail=500 > '{dmesg_path}' 2>/dev/null || true",
+          shell=True,
+          env=env,
+          check=False,
+      )
+    except Exception as e:
+      print(f"Warning: could not capture node telemetry: {e}")
 
     # Parse iteration metrics
     try:
