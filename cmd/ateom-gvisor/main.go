@@ -56,12 +56,17 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/vishvananda/netns"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/sys/unix"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 )
+
+var tracer = otel.Tracer("ateom-gvisor")
 
 var (
 	podUID = pflag.String("pod-uid", "", "The UID of the current pod")
@@ -659,20 +664,25 @@ func (s *AteomService) RunWorkload(ctx context.Context, req *ateompb.RunWorkload
 	//   * Correct runsc version is downloaded and placed on disk.
 	//   * All OCI bundles are set up, including for the pause container.
 
-	egress, err := s.prepareActorEgress(ctx, req.GetActorUid(), req.GetEgressGateway())
+	netCtx, spanNet := tracer.Start(ctx, "Run.SetupActorNetwork")
+	egress, err := s.prepareActorEgress(netCtx, req.GetActorUid(), req.GetEgressGateway())
 	if err != nil {
+		spanNet.End()
 		return nil, err
 	}
-	if err := ateomnet.SetupActorNetwork(ctx, ateomnet.NetworkConfig{
+	if err := ateomnet.SetupActorNetwork(netCtx, ateomnet.NetworkConfig{
 		InteriorNetNS:      s.interiorNetNS,
 		DumpNetInfo:        true,
 		EgressRedirectPort: s.egressRedirectPort(req.GetEgressGateway() != nil),
 	}); err != nil {
+		spanNet.End()
 		// Cleared here as well as in the deferred cleanup below, because that
 		// defer is not registered until after this check.
 		s.activeActor.Store(nil)
 		return nil, fmt.Errorf("while setting up actor network: %w", err)
 	}
+	spanNet.End()
+
 	rcmd := &runsc{
 		path:           req.GetRunscPath(),
 		actorUID:       req.GetActorUid(),
@@ -707,44 +717,67 @@ func (s *AteomService) RunWorkload(ctx context.Context, req *ateompb.RunWorkload
 	// upper — because mounting is ateom's job (atelet runs with no
 	// capabilities); runsc's gofer resolves the mount in this pod's mount
 	// namespace.
+	_, spanPauseRootfs := tracer.Start(ctx, "Run.SetupPauseRootfs")
 	if err := imagecache.SetupBundleRootfs(ateompath.OCIBundlePath(req.GetActorUid(), ocispec.PauseContainer)); err != nil {
+		spanPauseRootfs.End()
 		return nil, fmt.Errorf("while composing pause rootfs: %w", err)
 	}
+	spanPauseRootfs.End()
+
 	containersToDelete = append(containersToDelete, ocispec.PauseContainer)
-	if err := rcmd.cmdCreate(ctx, os.Stdout, ocispec.PauseContainer, nil); err != nil {
+	pauseCtx, spanPause := tracer.Start(ctx, "Run.StartPauseContainer")
+	if err := rcmd.cmdCreate(pauseCtx, os.Stdout, ocispec.PauseContainer, nil); err != nil {
+		spanPause.End()
 		return nil, fmt.Errorf("while creating pause container: %w", err)
 	}
-	if err := rcmd.cmdStart(ctx, os.Stdout, ocispec.PauseContainer); err != nil {
+	if err := rcmd.cmdStart(pauseCtx, os.Stdout, ocispec.PauseContainer); err != nil {
+		spanPause.End()
 		return nil, fmt.Errorf("while starting pause container: %w", err)
 	}
+	spanPause.End()
 
 	// Create and start each application container, each with its own log pipe so
 	// every line is tagged with the originating container (ate.actor.container.name).
 	for _, ac := range req.GetSpec().GetContainers() {
+		appCtx, spanApp := tracer.Start(ctx, "Run.StartContainer:"+ac.GetName(),
+			trace.WithAttributes(attribute.String("container.name", ac.GetName())),
+		)
 		pw, err := s.actorLogger.StartJSONLogPipe(attribution, ac.GetName())
 		if err != nil {
+			spanApp.End()
 			return nil, fmt.Errorf("while starting json log pipe for %q: %w", ac.GetName(), err)
 		}
 		defer pw.Close()
 		if err := imagecache.SetupBundleRootfs(ateompath.OCIBundlePath(req.GetActorUid(), ac.GetName())); err != nil {
+			spanApp.End()
 			return nil, fmt.Errorf("while composing %q rootfs: %w", ac.GetName(), err)
 		}
 		containersToDelete = append(containersToDelete, ac.GetName())
-		if err := rcmd.cmdCreate(ctx, pw, ac.GetName(), nil); err != nil {
+		if err := rcmd.cmdCreate(appCtx, pw, ac.GetName(), nil); err != nil {
+			spanApp.End()
 			return nil, fmt.Errorf("while creating %q application container: %w", ac.GetName(), err)
 		}
-		if err := rcmd.cmdStart(ctx, pw, ac.GetName()); err != nil {
+		if err := rcmd.cmdStart(appCtx, pw, ac.GetName()); err != nil {
+			spanApp.End()
 			return nil, fmt.Errorf("while starting %q application container: %w", ac.GetName(), err)
 		}
+		spanApp.End()
 	}
 
 	// Block until every readyz-enabled container reports 200.
-	if err := readyz.WaitAll(ctx, req.GetSpec().GetContainers(), ateomnet.ActorVethIP); err != nil {
+	readyzCtx, spanReadyz := tracer.Start(ctx, "Run.ReadyzWait")
+	if err := readyz.WaitAll(readyzCtx, req.GetSpec().GetContainers(), ateomnet.ActorVethIP); err != nil {
+		spanReadyz.End()
 		return nil, fmt.Errorf("while waiting for container readyz: %w", err)
 	}
+	spanReadyz.End()
+
+	_, spanNetAct := tracer.Start(ctx, "Run.ActivateActorNetworking")
 	if err := s.activateActorNetworking(req.GetAtespace(), req.GetActorName(), egress); err != nil {
+		spanNetAct.End()
 		return nil, err
 	}
+	spanNetAct.End()
 
 	s.actorLogger.EmitLifecycleLog(ctx, "Actor started", attribution)
 	s.activeSession = &workloadSession{rcmd: rcmd, containers: containerNames(req.GetSpec().GetContainers())}
@@ -938,19 +971,24 @@ func (s *AteomService) RestoreWorkload(ctx context.Context, req *ateompb.Restore
 	//   * All OCI bundles are set up, including for the pause container.
 	//   * Checkpoint downloaded and placed on disk
 
-	egress, err := s.prepareActorEgress(ctx, req.GetActorUid(), req.GetEgressGateway())
+	netCtx, spanNet := tracer.Start(ctx, "Restore.SetupActorNetwork")
+	egress, err := s.prepareActorEgress(netCtx, req.GetActorUid(), req.GetEgressGateway())
 	if err != nil {
+		spanNet.End()
 		return nil, err
 	}
-	if err := ateomnet.SetupActorNetwork(ctx, ateomnet.NetworkConfig{
+	if err := ateomnet.SetupActorNetwork(netCtx, ateomnet.NetworkConfig{
 		InteriorNetNS:      s.interiorNetNS,
 		DumpNetInfo:        true,
 		EgressRedirectPort: s.egressRedirectPort(req.GetEgressGateway() != nil),
 	}); err != nil {
+		spanNet.End()
 		// Same as the Run path: the defer below is not registered yet.
 		s.activeActor.Store(nil)
 		return nil, fmt.Errorf("while setting up actor network: %w", err)
 	}
+	spanNet.End()
+
 	rcmd := &runsc{
 		path:           req.GetRunscPath(),
 		actorUID:       req.GetActorUid(),
@@ -980,36 +1018,50 @@ func (s *AteomService) RestoreWorkload(ctx context.Context, req *ateompb.Restore
 	checkpointDir := ateompath.RestoreStateDir(req.GetActorUid())
 
 	if hasDurableVolumes(req.GetSpec().GetContainers()) {
+		_, spanDurable := tracer.Start(ctx, "Restore.UntarDurableVolumes")
 		if err := untarDurableVolumes(ateompath.DurableDirVolumeMountsDir(req.GetActorUid()), checkpointDir); err != nil {
+			spanDurable.End()
 			return nil, fmt.Errorf("while restoring durable-dir volumes: %w", err)
 		}
+		spanDurable.End()
 	}
 	// Compose the pause rootfs before create (see RunWorkload). runsc restore
 	// only needs the rootfs to hold the correct content; whether it came from
 	// an untar or an overlay of cached layers is transparent to it.
+	_, spanPauseRootfs := tracer.Start(ctx, "Restore.SetupPauseRootfs")
 	if err := imagecache.SetupBundleRootfs(ateompath.OCIBundlePath(req.GetActorUid(), ocispec.PauseContainer)); err != nil {
+		spanPauseRootfs.End()
 		return nil, fmt.Errorf("while composing pause rootfs: %w", err)
 	}
+	spanPauseRootfs.End()
 
 	switch req.GetScope() {
 	case ateompb.SnapshotScope_SNAPSHOT_SCOPE_DATA:
 		// Create and start pause container (cold boot with durable-dir volumes restored)
 		containersToDelete = append(containersToDelete, ocispec.PauseContainer)
-		if err := rcmd.cmdCreate(ctx, os.Stdout, ocispec.PauseContainer, nil); err != nil {
+		pauseCtx, spanPause := tracer.Start(ctx, "Restore.StartPauseContainer")
+		if err := rcmd.cmdCreate(pauseCtx, os.Stdout, ocispec.PauseContainer, nil); err != nil {
+			spanPause.End()
 			return nil, fmt.Errorf("while creating pause container: %w", err)
 		}
-		if err := rcmd.cmdStart(ctx, os.Stdout, ocispec.PauseContainer); err != nil {
+		if err := rcmd.cmdStart(pauseCtx, os.Stdout, ocispec.PauseContainer); err != nil {
+			spanPause.End()
 			return nil, fmt.Errorf("while starting pause container: %w", err)
 		}
+		spanPause.End()
 	case ateompb.SnapshotScope_SNAPSHOT_SCOPE_FULL, ateompb.SnapshotScope_SNAPSHOT_SCOPE_DATA_ON_GOLDEN:
 		// Create and restore pause container
 		containersToDelete = append(containersToDelete, ocispec.PauseContainer)
-		if err := rcmd.cmdCreate(ctx, os.Stdout, ocispec.PauseContainer, nil); err != nil {
+		pauseCtx, spanPause := tracer.Start(ctx, "Restore.RestorePauseContainer")
+		if err := rcmd.cmdCreate(pauseCtx, os.Stdout, ocispec.PauseContainer, nil); err != nil {
+			spanPause.End()
 			return nil, fmt.Errorf("while creating pause container: %w", err)
 		}
-		if err := rcmd.cmdRestore(ctx, os.Stdout, ocispec.PauseContainer, checkpointDir); err != nil {
+		if err := rcmd.cmdRestore(pauseCtx, os.Stdout, ocispec.PauseContainer, checkpointDir); err != nil {
+			spanPause.End()
 			return nil, fmt.Errorf("while restoring pause container: %w", err)
 		}
+		spanPause.End()
 	default:
 		return nil, fmt.Errorf("unexpected snapshot scope: %v", req.GetScope())
 	}
@@ -1017,43 +1069,61 @@ func (s *AteomService) RestoreWorkload(ctx context.Context, req *ateompb.Restore
 	// Create and restore each application container, each with its own log pipe so
 	// every line is tagged with the originating container (ate.actor.container.name).
 	for _, ac := range req.GetSpec().GetContainers() {
+		appCtx, spanApp := tracer.Start(ctx, "Restore.RestoreContainer:"+ac.GetName(),
+			trace.WithAttributes(attribute.String("container.name", ac.GetName())),
+		)
 		pw, err := s.actorLogger.StartJSONLogPipe(attribution, ac.GetName())
 		if err != nil {
+			spanApp.End()
 			return nil, fmt.Errorf("while starting json log pipe for %q: %w", ac.GetName(), err)
 		}
 		defer pw.Close()
 		if err := imagecache.SetupBundleRootfs(ateompath.OCIBundlePath(req.GetActorUid(), ac.GetName())); err != nil {
+			spanApp.End()
 			return nil, fmt.Errorf("while composing %q rootfs: %w", ac.GetName(), err)
 		}
 		switch req.GetScope() {
 		case ateompb.SnapshotScope_SNAPSHOT_SCOPE_DATA:
 			containersToDelete = append(containersToDelete, ac.GetName())
-			if err := rcmd.cmdCreate(ctx, pw, ac.GetName(), nil); err != nil {
+			if err := rcmd.cmdCreate(appCtx, pw, ac.GetName(), nil); err != nil {
+				spanApp.End()
 				return nil, fmt.Errorf("while creating %q application container: %w", ac.GetName(), err)
 			}
-			if err := rcmd.cmdStart(ctx, pw, ac.GetName()); err != nil {
+			if err := rcmd.cmdStart(appCtx, pw, ac.GetName()); err != nil {
+				spanApp.End()
 				return nil, fmt.Errorf("while starting %q application container: %w", ac.GetName(), err)
 			}
 		case ateompb.SnapshotScope_SNAPSHOT_SCOPE_FULL, ateompb.SnapshotScope_SNAPSHOT_SCOPE_DATA_ON_GOLDEN:
 			containersToDelete = append(containersToDelete, ac.GetName())
-			if err := rcmd.cmdCreate(ctx, pw, ac.GetName(), nil); err != nil {
+			if err := rcmd.cmdCreate(appCtx, pw, ac.GetName(), nil); err != nil {
+				spanApp.End()
 				return nil, fmt.Errorf("while creating %q application container: %w", ac.GetName(), err)
 			}
-			if err := rcmd.cmdRestore(ctx, pw, ac.GetName(), checkpointDir); err != nil {
+			if err := rcmd.cmdRestore(appCtx, pw, ac.GetName(), checkpointDir); err != nil {
+				spanApp.End()
 				return nil, fmt.Errorf("while restoring %q application container: %w", ac.GetName(), err)
 			}
 		default:
+			spanApp.End()
 			return nil, fmt.Errorf("unexpected snapshot scope: %v", req.GetScope())
 		}
+		spanApp.End()
 	}
 
 	// Block until every readyz-enabled container reports 200.
-	if err := readyz.WaitAll(ctx, req.GetSpec().GetContainers(), ateomnet.ActorVethIP); err != nil {
+	readyzCtx, spanReadyz := tracer.Start(ctx, "Restore.ReadyzWait")
+	if err := readyz.WaitAll(readyzCtx, req.GetSpec().GetContainers(), ateomnet.ActorVethIP); err != nil {
+		spanReadyz.End()
 		return nil, fmt.Errorf("while waiting for container readyz: %w", err)
 	}
+	spanReadyz.End()
+
+	_, spanNetAct := tracer.Start(ctx, "Restore.ActivateActorNetworking")
 	if err := s.activateActorNetworking(req.GetAtespace(), req.GetActorName(), egress); err != nil {
+		spanNetAct.End()
 		return nil, err
 	}
+	spanNetAct.End()
 
 	s.actorLogger.EmitLifecycleLog(ctx, "Actor restored", attribution)
 	s.activeSession = &workloadSession{rcmd: rcmd, containers: containerNames(req.GetSpec().GetContainers())}
