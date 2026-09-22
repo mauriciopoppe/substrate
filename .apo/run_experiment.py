@@ -78,57 +78,42 @@ def source_env_file(filepath: str, env: Dict[str, str]) -> Dict[str, str]:
   return env
 
 
-def upload_trace_to_perfetto_ui(trace_path: str) -> Optional[str]:
-  """Uploads a trace JSON to public GCS bucket perfetto-ui-data and returns the permalink URL."""
+def upload_trace_to_private_bucket(trace_path: str, dest_bucket_prefix: str, env: Optional[Dict[str, str]] = None) -> Optional[str]:
+  """Uploads a trace JSON to the user's private benchmark bucket using gcloud storage.
+  Returns the private gs:// URI if successful."""
+  if not dest_bucket_prefix or not os.path.exists(trace_path):
+    return None
+
   try:
-    with open(trace_path, "rb") as f:
-      data = f.read()
-    if not data:
-      return None
-
-    # Chunked SHA-1 matching Perfetto UI hash algorithm
-    chunk_size = 32 * 1024 * 1024
-    chunk_digests = "".join(
-        hashlib.sha1(data[i : i + chunk_size]).hexdigest()
-        for i in range(0, len(data), chunk_size)
+    trace_filename = os.path.basename(trace_path)
+    # Ensure destination ends with trailing slash if it's a directory prefix
+    target_gcs_uri = f"{dest_bucket_prefix.rstrip('/')}/profiles/{trace_filename}"
+    print(f"Uploading trace to private bucket: {target_gcs_uri}...")
+    res = subprocess.run(
+        ["gcloud", "storage", "cp", trace_path, target_gcs_uri],
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
     )
-    raw_hash = hashlib.sha1(chunk_digests.encode("utf-8")).hexdigest()
-
-    # Upload raw trace if not already present
-    raw_url = f"https://storage.googleapis.com/perfetto-ui-data/{raw_hash}"
-    upload_url = f"https://www.googleapis.com/upload/storage/v1/b/perfetto-ui-data/o?uploadType=media&name={raw_hash}&predefinedAcl=publicRead"
-    req = urllib.request.Request(upload_url, data=data, headers={"Content-Type": "application/octet-stream"})
-    try:
-      with urllib.request.urlopen(req, timeout=15):
-        pass
-    except urllib.error.HTTPError as e:
-      if e.code not in (401, 403, 409):
-        pass
-
-    # Construct permalink state JSON
-    permalink_state = {"traceUrl": raw_url}
-    permalink_bytes = json.dumps(permalink_state, separators=(",", ":")).encode("utf-8")
-    json_hash = hashlib.sha1(permalink_bytes).hexdigest()
-
-    # Upload permalink JSON
-    json_upload_url = f"https://www.googleapis.com/upload/storage/v1/b/perfetto-ui-data/o?uploadType=media&name={json_hash}&predefinedAcl=publicRead"
-    req_json = urllib.request.Request(json_upload_url, data=permalink_bytes, headers={"Content-Type": "application/json; charset=utf-8"})
-    try:
-      with urllib.request.urlopen(req_json, timeout=15):
-        pass
-    except urllib.error.HTTPError as e:
-      if e.code not in (401, 403, 409):
-        pass
-
-    ui_url = f"https://ui.perfetto.dev/#!/?s={json_hash}"
-    return ui_url
+    if res.returncode == 0:
+      print(f"Successfully uploaded trace to: {target_gcs_uri}")
+      return target_gcs_uri
+    else:
+      print(f"Warning: Failed uploading trace to private bucket: {res.stderr.strip()}", file=sys.stderr)
+      return None
   except Exception as e:
-    print(f"Warning: Could not upload trace to Perfetto UI: {e}", file=sys.stderr)
+    print(f"Warning: Could not upload trace to private bucket: {e}", file=sys.stderr)
     return None
 
 
-def build_perfetto_trace_from_benchmark(iter_dir: str) -> Optional[str]:
+def build_perfetto_trace_from_benchmark(
+    iter_dir: str,
+    dest_bucket_prefix: str = "",
+    env: Optional[Dict[str, str]] = None,
+) -> Optional[str]:
   """Synthesizes perfetto_trace.json from execution_trace.out, traces.txt, and logs.txt.
+  Uploads to the user's private benchmark bucket if dest_bucket_prefix is provided.
   Returns the path to perfetto_trace.json if created, else None."""
   profiles_dir = os.path.join(iter_dir, "profiles")
   os.makedirs(profiles_dir, exist_ok=True)
@@ -293,16 +278,20 @@ def build_perfetto_trace_from_benchmark(iter_dir: str) -> Optional[str]:
       except Exception as de:
         print(f"Warning: Failed to generate Perfetto trace digest: {de}", file=sys.stderr)
 
-    # Upload to Perfetto UI
-    ui_url = upload_trace_to_perfetto_ui(perfetto_trace_path)
+    # Upload to user's private benchmark bucket
+    private_gcs_uri = upload_trace_to_private_bucket(perfetto_trace_path, dest_bucket_prefix, env=env)
     perfetto_url_path = os.path.join(profiles_dir, "perfetto_url.txt")
-    if ui_url:
-      with open(perfetto_url_path, "w", encoding="utf-8") as f:
-        f.write(ui_url + "\n")
-      print(f"1-Click Perfetto UI Permalink: {ui_url}")
-    else:
-      with open(perfetto_url_path, "w", encoding="utf-8") as f:
-        f.write("https://ui.perfetto.dev/ (Open perfetto_trace.json locally)\n")
+    with open(perfetto_url_path, "w", encoding="utf-8") as f:
+      f.write("=== Substrate Perfetto Trace Telemetry ===\n")
+      if private_gcs_uri:
+        f.write(f"Private GCS Location: {private_gcs_uri}\n")
+      f.write(f"Local Trace File    : {perfetto_trace_path}\n")
+      f.write("\nHow to Inspect Safely:\n")
+      f.write("1. Open https://ui.perfetto.dev in your browser.\n")
+      f.write("2. Drag-and-drop 'perfetto_trace.json' into the browser window.\n")
+      f.write("   (All trace parsing and rendering runs 100% client-side via in-browser WASM; no data is uploaded externally).\n")
+      if private_gcs_uri:
+        f.write(f"3. Or download via: gcloud storage cp {private_gcs_uri} /tmp/perfetto_trace.json\n")
 
     return perfetto_trace_path
   except Exception as e:
@@ -310,7 +299,12 @@ def build_perfetto_trace_from_benchmark(iter_dir: str) -> Optional[str]:
     return None
 
 
-def parse_iteration_stats(iter_dir: str, test_name: str) -> Dict[str, Any]:
+def parse_iteration_stats(
+    iter_dir: str,
+    test_name: str,
+    dest_bucket_prefix: str = "",
+    env: Optional[Dict[str, str]] = None,
+) -> Dict[str, Any]:
   """Parses CSV metrics, dmesg OOMs, and pprof hotspots for a single iteration."""
   stats_files = glob.glob(os.path.join(iter_dir, "*stats.csv"))
   if not stats_files:
@@ -401,7 +395,11 @@ def parse_iteration_stats(iter_dir: str, test_name: str) -> Dict[str, Any]:
         })
 
   # Generate Perfetto multi-lane trace and trace digest
-  perfetto_trace_path = build_perfetto_trace_from_benchmark(iter_dir)
+  perfetto_trace_path = build_perfetto_trace_from_benchmark(
+      iter_dir,
+      dest_bucket_prefix=dest_bucket_prefix,
+      env=env,
+  )
 
   summary: Dict[str, Any] = {
       "status": "COMPLETED",
@@ -508,7 +506,7 @@ Agents evaluating this trial should read artifacts in descending order of priori
 2. **`summary.json`**:
    - Primary SLI metrics (`ttfi_p90_ms`, `ttfi_p95_ms`, error rate, OOMs).
 3. **`monitor/profile/perfetto_url.txt`**:
-   - 1-click Perfetto UI link for human review and visual validation of track concurrency.
+   - Location of the trace in the private benchmark bucket (`gs://...`) and instructions for client-side browser loading in Perfetto UI.
 
 ### 2. Targeted Subsystem Investigation (Read Only If Gated by Digest Findings)
 - **If router ExtProc, gRPC serialization, or Go execution is the bottleneck**:
@@ -1278,7 +1276,8 @@ metadata:
 
     # Parse iteration metrics
     try:
-      parse_iteration_stats(iter_dir, test_name)
+      iter_dest = f"{gcs_run_dir}" if gcs_run_dir else f"{dest}/runs/{test_name}/{run_tag}"
+      parse_iteration_stats(iter_dir, test_name, dest_bucket_prefix=iter_dest, env=env)
     except Exception as e:
       print(f"Error processing iteration {iter_num} results: {e}")
       with open(os.path.join(iter_dir, "error.json"), "w", encoding="utf-8") as f:
