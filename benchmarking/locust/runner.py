@@ -56,7 +56,7 @@ BOOMER_CONFIG_PORT = 5560
 
 # Tab-separated columns written to traces.txt. Order matters — readers split
 # on \t and index positionally.
-TRACE_COLUMNS = ("time", "name", "duration_ms", "latency_source", "trace_id", "err")
+TRACE_COLUMNS = ("time", "actor", "name", "duration_ms", "latency_source", "trace_id", "err")
 
 # Python locust per-trace log line. Emitted by common/grpc_tracing.py and
 # tests/counter_demo.py as:
@@ -209,6 +209,7 @@ def extract_trace_record(prefix: str, line: str) -> dict[str, str] | None:
         duration = obj.get("duration_ms")
         return {
             "time": str(obj.get("time", "")),
+            "actor": str(obj.get("actor", "")),
             "name": str(obj.get("name", "")),
             "duration_ms": "" if duration is None else f"{float(duration):.3f}",
             "latency_source": str(obj.get("source", "")),
@@ -220,6 +221,7 @@ def extract_trace_record(prefix: str, line: str) -> dict[str, str] | None:
         return None
     return {
         "time": "",
+        "actor": "",
         "name": m.group("name"),
         "duration_ms": m.group("duration"),
         "latency_source": m.group("source"),

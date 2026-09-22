@@ -268,6 +268,7 @@ func (u *gluttonUser) delete(ctx context.Context) {
 func (u *gluttonUser) tracedCall(ctx context.Context, name string, do func(context.Context, *metadata.MD) error) error {
 	ctx, span := u.cfg.Tracer.Start(ctx, name)
 	defer span.End()
+	span.SetAttributes(attribute.String("actor.name", u.actorName))
 
 	start := time.Now()
 	var tr metadata.MD
@@ -278,7 +279,7 @@ func (u *gluttonUser) tracedCall(ctx context.Context, name string, do func(conte
 	if source == boomerutil.SourceServer {
 		span.SetAttributes(attribute.Float64("server.elapsed_ms", boomerutil.MsFloat(latency)))
 	}
-	boomerutil.LogSampledTrace(span, name, latency, source, err)
+	boomerutil.LogSampledTrace(span, name, latency, source, err, slog.String("actor", u.actorName))
 	if err != nil {
 		bmetrics.RecordFailure("grpc", name, userClass, latency, err.Error())
 		return err
@@ -290,6 +291,7 @@ func (u *gluttonUser) tracedCall(ctx context.Context, name string, do func(conte
 func (u *gluttonUser) ping(ctx context.Context) {
 	ctx, span := u.cfg.Tracer.Start(ctx, "GluttonPing")
 	defer span.End()
+	span.SetAttributes(attribute.String("actor.name", u.actorName))
 
 	message := uuid.NewString()
 	body, err := proto.Marshal(&gluttonpb.PingRequest{Message: message})
@@ -324,24 +326,24 @@ func (u *gluttonUser) ping(ctx context.Context) {
 
 	if resp.StatusCode >= 400 {
 		httpErr := fmt.Errorf("HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(respBody)))
-		boomerutil.LogSampledTrace(span, "GluttonPing", clientLatency, boomerutil.SourceClient, httpErr)
+		boomerutil.LogSampledTrace(span, "GluttonPing", clientLatency, boomerutil.SourceClient, httpErr, slog.String("actor", u.actorName))
 		bmetrics.RecordFailure("http", "GluttonPing", userClass, clientLatency, httpErr.Error())
 		return
 	}
 
 	pong := &gluttonpb.PingResponse{}
 	if err := proto.Unmarshal(respBody, pong); err != nil {
-		boomerutil.LogSampledTrace(span, "GluttonPing", clientLatency, boomerutil.SourceClient, err)
+		boomerutil.LogSampledTrace(span, "GluttonPing", clientLatency, boomerutil.SourceClient, err, slog.String("actor", u.actorName))
 		bmetrics.RecordFailure("http", "GluttonPing", userClass, clientLatency, err.Error())
 		return
 	}
 	if pong.Message != message {
 		mismatch := fmt.Errorf("ping echo mismatch: sent=%q recv=%q", message, pong.Message)
-		boomerutil.LogSampledTrace(span, "GluttonPing", clientLatency, boomerutil.SourceClient, mismatch)
+		boomerutil.LogSampledTrace(span, "GluttonPing", clientLatency, boomerutil.SourceClient, mismatch, slog.String("actor", u.actorName))
 		bmetrics.RecordFailure("http", "GluttonPing", userClass, clientLatency, mismatch.Error())
 		return
 	}
-	boomerutil.LogSampledTrace(span, "GluttonPing", clientLatency, boomerutil.SourceClient, nil)
+	boomerutil.LogSampledTrace(span, "GluttonPing", clientLatency, boomerutil.SourceClient, nil, slog.String("actor", u.actorName))
 	bmetrics.RecordSuccess("http", "GluttonPing", userClass, clientLatency, int64(len(respBody)))
 }
 
@@ -364,11 +366,12 @@ func (u *gluttonUser) ensureRAMFilled(ctx context.Context) {
 
 	ctx, span := u.cfg.Tracer.Start(ctx, "GluttonFillRAM")
 	defer span.End()
+	span.SetAttributes(attribute.String("actor.name", u.actorName))
 	start := time.Now()
 
 	err := u.writeRAM(ctx, memLoadKey, target, gluttonpb.WriteMode_WRITE_MODE_TRUNCATE)
 	clientLatency := time.Since(start)
-	boomerutil.LogSampledTrace(span, "GluttonFillRAM", clientLatency, boomerutil.SourceClient, err)
+	boomerutil.LogSampledTrace(span, "GluttonFillRAM", clientLatency, boomerutil.SourceClient, err, slog.String("actor", u.actorName))
 	if err != nil {
 		bmetrics.RecordFailure("http", "GluttonFillRAM", userClass, clientLatency, err.Error())
 		return
@@ -394,11 +397,12 @@ func (u *gluttonUser) churnRAM(ctx context.Context) {
 
 	ctx, span := u.cfg.Tracer.Start(ctx, "GluttonChurnRAM")
 	defer span.End()
+	span.SetAttributes(attribute.String("actor.name", u.actorName))
 	start := time.Now()
 
 	err := u.writeRAM(ctx, memLoadKey, churn, gluttonpb.WriteMode_WRITE_MODE_OVERWRITE_ROTATE)
 	clientLatency := time.Since(start)
-	boomerutil.LogSampledTrace(span, "GluttonChurnRAM", clientLatency, boomerutil.SourceClient, err)
+	boomerutil.LogSampledTrace(span, "GluttonChurnRAM", clientLatency, boomerutil.SourceClient, err, slog.String("actor", u.actorName))
 	if err != nil {
 		bmetrics.RecordFailure("http", "GluttonChurnRAM", userClass, clientLatency, err.Error())
 		return
@@ -424,12 +428,13 @@ func (u *gluttonUser) readRAM(ctx context.Context) {
 
 	ctx, span := u.cfg.Tracer.Start(ctx, "GluttonReadRAM")
 	defer span.End()
+	span.SetAttributes(attribute.String("actor.name", u.actorName))
 	start := time.Now()
 
 	resp := &gluttonpb.ReadRAMResponse{}
 	err := u.postProto(ctx, readRAMPath, &gluttonpb.ReadRAMRequest{Key: memLoadKey, Size: size}, resp)
 	clientLatency := time.Since(start)
-	boomerutil.LogSampledTrace(span, "GluttonReadRAM", clientLatency, boomerutil.SourceClient, err)
+	boomerutil.LogSampledTrace(span, "GluttonReadRAM", clientLatency, boomerutil.SourceClient, err, slog.String("actor", u.actorName))
 	if err != nil {
 		bmetrics.RecordFailure("http", "GluttonReadRAM", userClass, clientLatency, err.Error())
 		return

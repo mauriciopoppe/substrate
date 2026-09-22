@@ -203,6 +203,8 @@ def build_perfetto_trace_from_benchmark(
   ]
 
   events: List[Dict[str, Any]] = []
+  actor_threads: Dict[str, int] = {}
+  header_map: Optional[Dict[str, int]] = None
 
   if os.path.exists(traces_path):
     try:
@@ -211,12 +213,37 @@ def build_perfetto_trace_from_benchmark(
         for row in reader:
           if not row or len(row) < 3:
             continue
-          # row: [time, name, duration_ms, latency_source, trace_id, err]
-          t_str = row[0]
-          name = row[1]
-          dur_ms_str = row[2]
-          src = row[3] if len(row) > 3 else ""
-          err = row[5] if len(row) > 5 else ""
+          # Check for TSV header
+          if row[0] == "time" or (len(row) > 1 and row[1] == "actor"):
+            header_map = {col.strip(): idx for idx, col in enumerate(row)}
+            continue
+
+          if header_map:
+            t_str = row[header_map["time"]] if "time" in header_map and len(row) > header_map["time"] else row[0]
+            actor = row[header_map["actor"]] if "actor" in header_map and len(row) > header_map["actor"] else ""
+            name = row[header_map["name"]] if "name" in header_map and len(row) > header_map["name"] else row[1]
+            dur_ms_str = row[header_map["duration_ms"]] if "duration_ms" in header_map and len(row) > header_map["duration_ms"] else row[2]
+            src = row[header_map["latency_source"]] if "latency_source" in header_map and len(row) > header_map["latency_source"] else ""
+            trace_id = row[header_map["trace_id"]] if "trace_id" in header_map and len(row) > header_map["trace_id"] else ""
+            err = row[header_map["err"]] if "err" in header_map and len(row) > header_map["err"] else ""
+          else:
+            # Fallback without header: 7 cols (with actor) vs 6 cols (legacy)
+            if len(row) >= 7:
+              t_str = row[0]
+              actor = row[1]
+              name = row[2]
+              dur_ms_str = row[3]
+              src = row[4]
+              trace_id = row[5]
+              err = row[6]
+            else:
+              t_str = row[0]
+              actor = ""
+              name = row[1]
+              dur_ms_str = row[2]
+              src = row[3] if len(row) > 3 else ""
+              trace_id = row[4] if len(row) > 4 else ""
+              err = row[5] if len(row) > 5 else ""
 
           try:
             dur_us = int(float(dur_ms_str) * 1000)
@@ -227,7 +254,6 @@ def build_perfetto_trace_from_benchmark(
           ts_us = 0
           if t_str:
             try:
-              # Handle ISO8601 or RFC3339
               t_str_clean = t_str.replace("Z", "+00:00")
               dt = datetime.fromisoformat(t_str_clean)
               ts_us = int(dt.timestamp() * 1e6)
@@ -242,6 +268,25 @@ def build_perfetto_trace_from_benchmark(
           elif "restore" in name.lower() or "snapshot" in name.lower() or "microvm" in name.lower():
             lane = 4
             cat = "MICROVM"
+          elif actor:
+            if actor not in actor_threads:
+              actor_tid = 10 + len(actor_threads)
+              actor_threads[actor] = actor_tid
+              track_metadata.append({
+                  "name": "thread_name",
+                  "ph": "M",
+                  "pid": 1,
+                  "tid": actor_tid,
+                  "args": {"name": f"Actor: {actor}"},
+              })
+              track_metadata.append({
+                  "name": "thread_sort_index",
+                  "ph": "M",
+                  "pid": 1,
+                  "tid": actor_tid,
+                  "args": {"sort_index": 10 + len(actor_threads)},
+              })
+            lane = actor_threads[actor]
 
           ev = {
               "name": name,
@@ -251,7 +296,12 @@ def build_perfetto_trace_from_benchmark(
               "dur": dur_us,
               "pid": 1,
               "tid": lane,
-              "args": {"source": src, "error": err},
+              "args": {
+                  "actor": actor,
+                  "source": src,
+                  "trace_id": trace_id,
+                  "error": err,
+              },
           }
           events.append(ev)
     except Exception as e:

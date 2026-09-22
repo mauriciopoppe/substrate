@@ -36,7 +36,7 @@ func MsFloat(d time.Duration) float64 {
 
 // LogSampledTrace emits a single structured line per sampled span. Operators
 // parse these lines (e.g. via fluentbit) to rebuild the trace stream.
-func LogSampledTrace(span trace.Span, name string, latency time.Duration, source string, err error) {
+func LogSampledTrace(span trace.Span, name string, latency time.Duration, source string, err error, extraAttrs ...slog.Attr) {
 	sc := span.SpanContext()
 	if !sc.IsSampled() {
 		return
@@ -46,6 +46,9 @@ func LogSampledTrace(span trace.Span, name string, latency time.Duration, source
 		slog.String("trace_id", sc.TraceID().String()),
 		slog.Float64("duration_ms", MsFloat(latency)),
 		slog.String("source", source),
+	}
+	for _, a := range extraAttrs {
+		attrs = append(attrs, a)
 	}
 	if err != nil {
 		attrs = append(attrs, slog.String("err", err.Error()))

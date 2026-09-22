@@ -245,6 +245,7 @@ func (u *durDirUser) delete(ctx context.Context) {
 func (u *durDirUser) tracedCall(ctx context.Context, name string, do func(context.Context, *metadata.MD) error) error {
 	ctx, span := u.cfg.Tracer.Start(ctx, name)
 	defer span.End()
+	span.SetAttributes(attribute.String("actor.name", u.actorName))
 
 	start := time.Now()
 	var tr metadata.MD
@@ -255,7 +256,7 @@ func (u *durDirUser) tracedCall(ctx context.Context, name string, do func(contex
 	if source == boomerutil.SourceServer {
 		span.SetAttributes(attribute.Float64("server.elapsed_ms", boomerutil.MsFloat(latency)))
 	}
-	boomerutil.LogSampledTrace(span, name, latency, source, err)
+	boomerutil.LogSampledTrace(span, name, latency, source, err, slog.String("actor", u.actorName))
 	if err != nil {
 		bmetrics.RecordFailure("grpc", name, u.userClass, latency, err.Error())
 		return err
@@ -407,6 +408,7 @@ func (u *durDirUser) readDisk(ctx context.Context, metricName string, readMode g
 func (u *durDirUser) httpProtoCall(ctx context.Context, metricName, route string, body []byte, validate func([]byte) error) ([]byte, error) {
 	ctx, span := u.cfg.Tracer.Start(ctx, metricName)
 	defer span.End()
+	span.SetAttributes(attribute.String("actor.name", u.actorName))
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, u.cfg.RouterURL+route, bytes.NewReader(body))
 	if err != nil {
@@ -439,20 +441,20 @@ func (u *durDirUser) httpProtoCall(ctx context.Context, metricName, route string
 
 	if resp.StatusCode >= 400 {
 		httpErr := fmt.Errorf("HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(respBody)))
-		boomerutil.LogSampledTrace(span, metricName, clientLatency, boomerutil.SourceClient, httpErr)
+		boomerutil.LogSampledTrace(span, metricName, clientLatency, boomerutil.SourceClient, httpErr, slog.String("actor", u.actorName))
 		bmetrics.RecordFailure("http", metricName, u.userClass, clientLatency, httpErr.Error())
 		return nil, httpErr
 	}
 
 	if validate != nil {
 		if err := validate(respBody); err != nil {
-			boomerutil.LogSampledTrace(span, metricName, clientLatency, boomerutil.SourceClient, err)
+			boomerutil.LogSampledTrace(span, metricName, clientLatency, boomerutil.SourceClient, err, slog.String("actor", u.actorName))
 			bmetrics.RecordFailure("http", metricName, u.userClass, clientLatency, err.Error())
 			return nil, err
 		}
 	}
 
-	boomerutil.LogSampledTrace(span, metricName, clientLatency, boomerutil.SourceClient, nil)
+	boomerutil.LogSampledTrace(span, metricName, clientLatency, boomerutil.SourceClient, nil, slog.String("actor", u.actorName))
 	bmetrics.RecordSuccess("http", metricName, u.userClass, clientLatency, int64(len(respBody)))
 	return respBody, nil
 }
