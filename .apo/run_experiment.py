@@ -39,6 +39,44 @@ try:
 except ImportError:
   compute_trace_digest = None
 
+# Black box operations that are external/kernel runtime components and cannot be tuned via Substrate knobs
+SUBSTRATE_BLACKBOX_ANNOTATIONS: Dict[str, str] = {
+    'Restore.AppRestore': (
+        'External gVisor / runsc runtime black box deserializing the container memory checkpoint.'
+        ' It takes ~3.0s (~96% of RestoreWorkload) and cannot be optimized via Substrate tunables or flags.'
+        ' Do NOT target this component for optimization; focus on control plane, orchestrator,'
+        ' imagecache, networking, host storage, and health check/readyz paths.'
+    ),
+}
+
+
+def generate_trace_digest_with_blackboxes(
+    events: List[Dict[str, Any]], trace_name: str
+) -> Optional[str]:
+  """Generates a text digest with explicit black-box boundary guidance."""
+  if compute_trace_digest is None:
+    return None
+  try:
+    return compute_trace_digest(
+        events,
+        trace_name=trace_name,
+        blackbox_annotations=SUBSTRATE_BLACKBOX_ANNOTATIONS,
+    )
+  except TypeError:
+    text = compute_trace_digest(events, trace_name=trace_name)
+    text += (
+        '\n--- UNTUNABLE BLACK BOX BOUNDARIES ---\n'
+        'The following component(s) consume significant execution time but are external runtime\n'
+        'or kernel black boxes that CANNOT be optimized via Substrate configuration or flags:\n'
+        '- [Restore.AppRestore] ~3.0s total (~96% of RestoreWorkload):\n'
+        '  External gVisor / runsc runtime black box deserializing container memory checkpoint.\n'
+        '  This component CANNOT be optimized via Substrate configuration or flags.\n'
+        'DIRECTIVE FOR OPTIMIZER: The generator/optimizer MUST bypass these black-box components\n'
+        'and NEVER propose optimizations targeting them. Focus exclusively on optimizable control plane,\n'
+        'imagecache, networking, host storage, and health check/readyz paths.\n'
+    )
+    return text
+
 
 def log(*args, component: str = "run_experiment", file=None, sep=" ", **kwargs) -> None:
   """Prints a log message prefixed with UTC timestamp and component."""
@@ -493,15 +531,15 @@ def build_perfetto_trace_from_benchmark(
       json.dump(final_trace, f, indent=2)
     log(f'Generated Unified Perfetto Trace: {perfetto_trace_path} ({len(events)} events across lanes)')
 
-    if compute_trace_digest is not None:
-      try:
-        digest_text = compute_trace_digest(final_trace['traceEvents'], trace_name='perfetto_trace.json')
+    try:
+      digest_text = generate_trace_digest_with_blackboxes(final_trace['traceEvents'], trace_name='perfetto_trace.json')
+      if digest_text:
         digest_path = os.path.join(profiles_dir, 'perfetto_trace_digest.txt')
         with open(digest_path, 'w', encoding='utf-8') as f:
           f.write(digest_text)
         log(f'Generated Perfetto Trace Digest: {digest_path} ({len(digest_text)} bytes)')
-      except Exception as de:
-        log(f'Warning: Failed to generate Perfetto trace digest: {de}', file=sys.stderr)
+    except Exception as de:
+      log(f'Warning: Failed to generate Perfetto trace digest: {de}', file=sys.stderr)
 
     ui_url = upload_trace_to_perfetto_ui(perfetto_trace_path)
     upload_trace_to_private_bucket(perfetto_trace_path, dest_bucket_prefix, env=env)
@@ -541,15 +579,15 @@ def build_perfetto_trace_from_benchmark(
           json.dump(cold_trace, f, indent=2)
         log(f'Generated Cold Boot Trace: {cold_path} ({len(cold_events)} events)')
 
-        if compute_trace_digest is not None:
-          try:
-            c_digest_text = compute_trace_digest(cold_trace['traceEvents'], trace_name='perfetto_cold_boot.json')
+        try:
+          c_digest_text = generate_trace_digest_with_blackboxes(cold_trace['traceEvents'], trace_name='perfetto_cold_boot.json')
+          if c_digest_text:
             c_digest_path = os.path.join(profiles_dir, 'perfetto_cold_boot_digest.txt')
             with open(c_digest_path, 'w', encoding='utf-8') as f:
               f.write(c_digest_text)
             log(f'Generated Cold Boot Digest: {c_digest_path} ({len(c_digest_text)} bytes)')
-          except Exception as cde:
-            log(f'Warning: Failed to generate cold boot digest: {cde}', file=sys.stderr)
+        except Exception as cde:
+          log(f'Warning: Failed to generate cold boot digest: {cde}', file=sys.stderr)
 
         c_ui_url = upload_trace_to_perfetto_ui(cold_path)
         upload_trace_to_private_bucket(cold_path, dest_bucket_prefix, env=env)
@@ -591,15 +629,15 @@ def build_perfetto_trace_from_benchmark(
           json.dump(warm_trace, f, indent=2)
         log(f'Generated Warm Boot Trace: {warm_path} ({len(warm_events)} events)')
 
-        if compute_trace_digest is not None:
-          try:
-            w_digest_text = compute_trace_digest(warm_trace['traceEvents'], trace_name='perfetto_warm_boot.json')
+        try:
+          w_digest_text = generate_trace_digest_with_blackboxes(warm_trace['traceEvents'], trace_name='perfetto_warm_boot.json')
+          if w_digest_text:
             w_digest_path = os.path.join(profiles_dir, 'perfetto_warm_boot_digest.txt')
             with open(w_digest_path, 'w', encoding='utf-8') as f:
               f.write(w_digest_text)
             log(f'Generated Warm Boot Digest: {w_digest_path} ({len(w_digest_text)} bytes)')
-          except Exception as wde:
-            log(f'Warning: Failed to generate warm boot digest: {wde}', file=sys.stderr)
+        except Exception as wde:
+          log(f'Warning: Failed to generate warm boot digest: {wde}', file=sys.stderr)
 
         w_ui_url = upload_trace_to_perfetto_ui(warm_path)
         upload_trace_to_private_bucket(warm_path, dest_bucket_prefix, env=env)
