@@ -260,6 +260,11 @@ def build_perfetto_trace_from_benchmark(
             except Exception:
               pass
 
+          # t_str is the completion timestamp logged when the span ended.
+          # For Perfetto Complete Events ("X"), "ts" is the starting time of the slice.
+          # Therefore, start_ts = end_ts - duration.
+          start_ts_us = max(0, ts_us - dur_us) if ts_us > 0 else 0
+
           lane = 2
           cat = "REQUEST"
           if "router" in name.lower() or "extproc" in name.lower():
@@ -292,7 +297,7 @@ def build_perfetto_trace_from_benchmark(
               "name": name,
               "cat": cat,
               "ph": "X",
-              "ts": ts_us,
+              "ts": start_ts_us,
               "dur": dur_us,
               "pid": 1,
               "tid": lane,
@@ -331,6 +336,35 @@ def build_perfetto_trace_from_benchmark(
         "args": {"condition": "Completed"},
     })
   else:
+    # Sort events chronologically by start timestamp (ts).
+    # When start times are equal, sort by duration descending (-dur) so that
+    # parent/enclosing slices are written before child/nested slices.
+    events.sort(key=lambda e: (e["ts"], -e.get("dur", 0)))
+
+    # Defensive fix for clock skew/jitter: ensure slices on the same thread
+    # do not partially overlap. If slice B starts before slice A ends, but slice B
+    # extends beyond slice A (partial overlap), clamp slice B start time to slice A end time.
+    # If slice B is completely contained within slice A (B.end <= A.end), it is
+    # a valid nested child slice and is left untouched.
+    tid_stacks: Dict[int, List[Dict[str, Any]]] = {}
+    for ev in events:
+      tid = ev["tid"]
+      stack = tid_stacks.setdefault(tid, [])
+      while stack and (stack[-1]["ts"] + stack[-1].get("dur", 0) <= ev["ts"]):
+        stack.pop()
+      if stack:
+        parent = stack[-1]
+        ev_end = ev["ts"] + ev.get("dur", 0)
+        parent_end = parent["ts"] + parent.get("dur", 0)
+        if ev_end > parent_end:
+          ev["ts"] = parent_end
+          while stack and (stack[-1]["ts"] + stack[-1].get("dur", 0) <= ev["ts"]):
+            stack.pop()
+      stack.append(ev)
+
+    # Re-sort in case any timestamps were clamped
+    events.sort(key=lambda e: (e["ts"], -e.get("dur", 0)))
+
     # Normalize timestamps relative to min_ts
     min_ts = min(e["ts"] for e in events if e["ts"] > 0) if any(e["ts"] > 0 for e in events) else 0
     if min_ts > 0:
