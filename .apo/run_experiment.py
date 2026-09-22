@@ -40,18 +40,13 @@ except ImportError:
   compute_trace_digest = None
 
 
-def log(*args, component: str = "run_experiment", file=None, sep=" ", end="\n", **kwargs) -> None:
+def log(*args, component: str = "run_experiment", file=None, sep=" ", **kwargs) -> None:
   """Prints a log message prefixed with UTC timestamp and component."""
   now = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")[:-4] + "Z"
   target_file = file or sys.stdout
   msg = sep.join(str(a) for a in args)
-  lines = msg.split("\n")
-  for line in lines:
-    built_in_print(f"{now} [{component}] {line}", file=target_file, flush=True)
-
-
-built_in_print = print
-print = log
+  for line in msg.split("\n"):
+    print(f"{now} [{component}] {line}", file=target_file, flush=True)
 
 
 def run_cmd(
@@ -138,7 +133,7 @@ def upload_trace_to_perfetto_ui(trace_path: str) -> Optional[str]:
     ui_url = f"https://ui.perfetto.dev/#!/?s={json_hash}"
     return ui_url
   except Exception as e:
-    print(f"Warning: Could not upload trace to Perfetto UI: {e}", file=sys.stderr)
+    log(f"Warning: Could not upload trace to Perfetto UI: {e}", file=sys.stderr)
     return None
 
 
@@ -152,7 +147,7 @@ def upload_trace_to_private_bucket(trace_path: str, dest_bucket_prefix: str, env
     trace_filename = os.path.basename(trace_path)
     # Ensure destination ends with trailing slash if it's a directory prefix
     target_gcs_uri = f"{dest_bucket_prefix.rstrip('/')}/profiles/{trace_filename}"
-    print(f"Uploading trace to private bucket: {target_gcs_uri}...")
+    log(f"Uploading trace to private bucket: {target_gcs_uri}...")
     res = subprocess.run(
         ["gcloud", "storage", "cp", trace_path, target_gcs_uri],
         env=env,
@@ -161,13 +156,13 @@ def upload_trace_to_private_bucket(trace_path: str, dest_bucket_prefix: str, env
         check=False,
     )
     if res.returncode == 0:
-      print(f"Successfully uploaded trace to: {target_gcs_uri}")
+      log(f"Successfully uploaded trace to: {target_gcs_uri}")
       return target_gcs_uri
     else:
-      print(f"Warning: Failed uploading trace to private bucket: {res.stderr.strip()}", file=sys.stderr)
+      log(f"Warning: Failed uploading trace to private bucket: {res.stderr.strip()}", file=sys.stderr)
       return None
   except Exception as e:
-    print(f"Warning: Could not upload trace to private bucket: {e}", file=sys.stderr)
+    log(f"Warning: Could not upload trace to private bucket: {e}", file=sys.stderr)
     return None
 
 
@@ -302,7 +297,7 @@ def build_perfetto_trace_from_benchmark(
           raw_client_spans.append(span_info)
           events.append(span_info)
     except Exception as e:
-      print(f'Warning: Failed reading {traces_path}: {e}')
+      log(f'Warning: Failed reading {traces_path}: {e}')
 
   # Identify Cold Boot and P90 Warm Boot operations
   cold_span: Optional[Dict[str, Any]] = None
@@ -496,7 +491,7 @@ def build_perfetto_trace_from_benchmark(
   try:
     with open(perfetto_trace_path, 'w', encoding='utf-8') as f:
       json.dump(final_trace, f, indent=2)
-    print(f'Generated Unified Perfetto Trace: {perfetto_trace_path} ({len(events)} events across lanes)')
+    log(f'Generated Unified Perfetto Trace: {perfetto_trace_path} ({len(events)} events across lanes)')
 
     if compute_trace_digest is not None:
       try:
@@ -504,9 +499,9 @@ def build_perfetto_trace_from_benchmark(
         digest_path = os.path.join(profiles_dir, 'perfetto_trace_digest.txt')
         with open(digest_path, 'w', encoding='utf-8') as f:
           f.write(digest_text)
-        print(f'Generated Perfetto Trace Digest: {digest_path} ({len(digest_text)} bytes)')
+        log(f'Generated Perfetto Trace Digest: {digest_path} ({len(digest_text)} bytes)')
       except Exception as de:
-        print(f'Warning: Failed to generate Perfetto trace digest: {de}', file=sys.stderr)
+        log(f'Warning: Failed to generate Perfetto trace digest: {de}', file=sys.stderr)
 
     ui_url = upload_trace_to_perfetto_ui(perfetto_trace_path)
     upload_trace_to_private_bucket(perfetto_trace_path, dest_bucket_prefix, env=env)
@@ -544,7 +539,7 @@ def build_perfetto_trace_from_benchmark(
         cold_path = os.path.join(profiles_dir, 'perfetto_cold_boot.json')
         with open(cold_path, 'w', encoding='utf-8') as f:
           json.dump(cold_trace, f, indent=2)
-        print(f'Generated Cold Boot Trace: {cold_path} ({len(cold_events)} events)')
+        log(f'Generated Cold Boot Trace: {cold_path} ({len(cold_events)} events)')
 
         if compute_trace_digest is not None:
           try:
@@ -552,16 +547,16 @@ def build_perfetto_trace_from_benchmark(
             c_digest_path = os.path.join(profiles_dir, 'perfetto_cold_boot_digest.txt')
             with open(c_digest_path, 'w', encoding='utf-8') as f:
               f.write(c_digest_text)
-            print(f'Generated Cold Boot Digest: {c_digest_path} ({len(c_digest_text)} bytes)')
+            log(f'Generated Cold Boot Digest: {c_digest_path} ({len(c_digest_text)} bytes)')
           except Exception as cde:
-            print(f'Warning: Failed to generate cold boot digest: {cde}', file=sys.stderr)
+            log(f'Warning: Failed to generate cold boot digest: {cde}', file=sys.stderr)
 
         c_ui_url = upload_trace_to_perfetto_ui(cold_path)
         upload_trace_to_private_bucket(cold_path, dest_bucket_prefix, env=env)
         with open(os.path.join(profiles_dir, 'perfetto_cold_boot_url.txt'), 'w', encoding='utf-8') as f:
           f.write(f'{c_ui_url}\n' if c_ui_url else 'https://ui.perfetto.dev/\n')
         if c_ui_url:
-          print(f'1-Click Cold Boot UI Permalink: {c_ui_url}')
+          log(f'1-Click Cold Boot UI Permalink: {c_ui_url}')
 
     # Build Isolated Warm Boot (P90) Trace
     if warm_p90_span and 'raw_ts' in warm_p90_span:
@@ -594,7 +589,7 @@ def build_perfetto_trace_from_benchmark(
         warm_path = os.path.join(profiles_dir, 'perfetto_warm_boot.json')
         with open(warm_path, 'w', encoding='utf-8') as f:
           json.dump(warm_trace, f, indent=2)
-        print(f'Generated Warm Boot Trace: {warm_path} ({len(warm_events)} events)')
+        log(f'Generated Warm Boot Trace: {warm_path} ({len(warm_events)} events)')
 
         if compute_trace_digest is not None:
           try:
@@ -602,20 +597,20 @@ def build_perfetto_trace_from_benchmark(
             w_digest_path = os.path.join(profiles_dir, 'perfetto_warm_boot_digest.txt')
             with open(w_digest_path, 'w', encoding='utf-8') as f:
               f.write(w_digest_text)
-            print(f'Generated Warm Boot Digest: {w_digest_path} ({len(w_digest_text)} bytes)')
+            log(f'Generated Warm Boot Digest: {w_digest_path} ({len(w_digest_text)} bytes)')
           except Exception as wde:
-            print(f'Warning: Failed to generate warm boot digest: {wde}', file=sys.stderr)
+            log(f'Warning: Failed to generate warm boot digest: {wde}', file=sys.stderr)
 
         w_ui_url = upload_trace_to_perfetto_ui(warm_path)
         upload_trace_to_private_bucket(warm_path, dest_bucket_prefix, env=env)
         with open(os.path.join(profiles_dir, 'perfetto_warm_boot_url.txt'), 'w', encoding='utf-8') as f:
           f.write(f'{w_ui_url}\n' if w_ui_url else 'https://ui.perfetto.dev/\n')
         if w_ui_url:
-          print(f'1-Click Warm Boot UI Permalink: {w_ui_url}')
+          log(f'1-Click Warm Boot UI Permalink: {w_ui_url}')
 
     return perfetto_trace_path
   except Exception as e:
-    print(f'Warning: Failed writing Perfetto trace: {e}')
+    log(f'Warning: Failed writing Perfetto trace: {e}')
     return None
 
 
@@ -687,7 +682,7 @@ def parse_iteration_stats(
     if total_requests > 0:
       constraints["error_rate"] = float(total_failures) / float(total_requests)
   else:
-    print(f"Warning: No stats CSV found in {iter_dir}")
+    log(f"Warning: No stats CSV found in {iter_dir}")
 
   # Check for OOM events
   oom_events = 0
@@ -744,7 +739,7 @@ def parse_iteration_stats(
   summary_path = os.path.join(iter_dir, "summary.json")
   with open(summary_path, "w", encoding="utf-8") as f:
     json.dump(summary, f, indent=2)
-  print(f"Successfully generated {summary_path} with TTFI metrics:", metrics)
+  log(f"Successfully generated {summary_path} with TTFI metrics: {metrics}")
   return summary
 
 
@@ -760,9 +755,9 @@ def aggregate_iterations(results_dir: str, iterations: int) -> Dict[str, Any]:
           if data.get("metrics", {}).get("ttfi_p90_ms", 0.0) > 0:
             iter_summaries.append((i, data))
           else:
-            print(f"Warning: {iter_file} contains zeroed metrics: {data.get('metrics')}")
+            log(f"Warning: {iter_file} contains zeroed metrics: {data.get('metrics')}")
       except Exception as e:
-        print(f"Warning: Could not read {iter_file}: {e}")
+        log(f"Warning: Could not read {iter_file}: {e}")
 
   if not iter_summaries:
     error_payload = {
@@ -776,7 +771,7 @@ def aggregate_iterations(results_dir: str, iterations: int) -> Dict[str, Any]:
   # Sort iterations by primary objective (ttfi_p90_ms ascending)
   iter_summaries.sort(key=lambda item: item[1].get("metrics", {}).get("ttfi_p90_ms", float("inf")))
   median_idx, median_summary = iter_summaries[len(iter_summaries) // 2]
-  print(f"Selected median iteration: iter_{median_idx}")
+  log(f"Selected median iteration: iter_{median_idx}")
 
   # Copy artifacts from the median iteration to top-level results_dir
   median_iter_dir = os.path.join(results_dir, f"iter_{median_idx}")
@@ -878,14 +873,14 @@ Agents evaluating this trial should read artifacts in descending order of priori
   with open(target_summary_path, "w", encoding="utf-8") as f:
     json.dump(top_summary, f, indent=2)
 
-  print(f"Generated aggregated {target_summary_path} successfully (median iteration: {median_idx}).")
-  print(json.dumps(top_summary["metrics"], indent=2))
+  log(f"Generated aggregated {target_summary_path} successfully (median iteration: {median_idx}).")
+  log(json.dumps(top_summary["metrics"], indent=2))
   return top_summary
 
 
 def cleanup_stale_cluster_state(env: Dict[str, str]) -> None:
   """Purges leftover jobs/pods, clears DB actor records, and restarts ateom."""
-  print("Ensuring cluster is clean from previous benchmark runs (idempotency check)...")
+  log("Ensuring cluster is clean from previous benchmark runs (idempotency check)...")
   subprocess.run(
       ["kubectl", "delete", "jobs,pods", "-n", "benchmarking", "--all", "--wait=false"],
       env=env,
@@ -924,7 +919,7 @@ def cleanup_stale_cluster_state(env: Dict[str, str]) -> None:
       check=False,
   )
 
-  print("Resetting benchmark-ateom worker pool...")
+  log("Resetting benchmark-ateom worker pool...")
   subprocess.run(
       ["kubectl", "rollout", "restart", "deployment/benchmark-ateom", "-n", "benchmark-workloads"],
       env=env,
@@ -943,7 +938,7 @@ def cleanup_stale_cluster_state(env: Dict[str, str]) -> None:
 
 def flush_node_page_caches(env: Dict[str, str]) -> None:
   """Runs a privileged job on the benchmark node to drop host caches."""
-  print("Flushing node page caches and syncing block devices on benchmark node...")
+  log("Flushing node page caches and syncing block devices on benchmark node...")
   flush_job_yaml = """apiVersion: batch/v1
 kind: Job
 metadata:
@@ -1112,7 +1107,7 @@ def scrape_pprof_profiles(iter_dir: str, env: Dict[str, str], stop_event: thread
   os.makedirs(profiles_dir, exist_ok=True)
 
   # 1. Wait until runner pod is Running or stop_event is set
-  print("Background profiling: waiting for benchmark runner pod to be Running...")
+  log("Background profiling: waiting for benchmark runner pod to be Running...")
   pod_ready = False
   for _ in range(60):
     if stop_event.is_set():
@@ -1141,7 +1136,7 @@ def scrape_pprof_profiles(iter_dir: str, env: Dict[str, str], stop_event: thread
     time.sleep(2)
 
   if not pod_ready or stop_event.is_set():
-    print("Background profiling: runner pod did not reach Running state before timeout/completion.")
+    log("Background profiling: runner pod did not reach Running state before timeout/completion.")
     return
 
   # Allow workload to ramp up for a few seconds
@@ -1200,11 +1195,11 @@ def scrape_pprof_profiles(iter_dir: str, env: Dict[str, str], stop_event: thread
       target_port = 9090
 
   if not target_pod:
-    print("Background profiling: no active atenet-router or atelet pod found to profile.")
+    log("Background profiling: no active atenet-router or atelet pod found to profile.")
     return
 
   local_port = 14040 if target_port == 4040 else 19090
-  print(f"Background profiling: starting port-forward to {target_pod}:{target_port} on localhost:{local_port}...")
+  log(f"Background profiling: starting port-forward to {target_pod}:{target_port} on localhost:{local_port}...")
   pf_proc = subprocess.Popen(
       [
           "kubectl",
@@ -1224,14 +1219,14 @@ def scrape_pprof_profiles(iter_dir: str, env: Dict[str, str], stop_event: thread
     # Scrape Heap Profile
     heap_path = os.path.join(profiles_dir, "heap.pb.gz")
     try:
-      print(f"Background profiling: scraping heap profile from http://localhost:{local_port}/debug/pprof/heap...")
+      log(f"Background profiling: scraping heap profile from http://localhost:{local_port}/debug/pprof/heap...")
       req = urllib.request.Request(f"http://localhost:{local_port}/debug/pprof/heap")
       with urllib.request.urlopen(req, timeout=10) as resp:
         with open(heap_path, "wb") as out_f:
           out_f.write(resp.read())
-      print(f"Background profiling: saved heap profile to {heap_path}")
+      log(f"Background profiling: saved heap profile to {heap_path}")
     except Exception as e:
-      print(f"Background profiling: failed to scrape heap profile: {e}")
+      log(f"Background profiling: failed to scrape heap profile: {e}")
 
     if stop_event.is_set():
       return
@@ -1239,12 +1234,12 @@ def scrape_pprof_profiles(iter_dir: str, env: Dict[str, str], stop_event: thread
     # Scrape CPU Profile (30 seconds)
     cpu_path = os.path.join(profiles_dir, "cpu.pb.gz")
     try:
-      print(f"Background profiling: scraping 30s CPU profile from http://localhost:{local_port}/debug/pprof/profile?seconds=30...")
+      log(f"Background profiling: scraping 30s CPU profile from http://localhost:{local_port}/debug/pprof/profile?seconds=30...")
       req = urllib.request.Request(f"http://localhost:{local_port}/debug/pprof/profile?seconds=30")
       with urllib.request.urlopen(req, timeout=40) as resp:
         with open(cpu_path, "wb") as out_f:
           out_f.write(resp.read())
-      print(f"Background profiling: saved CPU profile to {cpu_path}")
+      log(f"Background profiling: saved CPU profile to {cpu_path}")
 
       # Generate cpu_top.txt and go_cpu_top.txt using go tool pprof if go tool is available
       cpu_top_path = os.path.join(profiles_dir, "cpu_top.txt")
@@ -1260,9 +1255,9 @@ def scrape_pprof_profiles(iter_dir: str, env: Dict[str, str], stop_event: thread
           f.write(pprof_top.stdout)
         with open(go_cpu_top_path, "w", encoding="utf-8") as f:
           f.write(ppprof_top.stdout)
-        print(f"Background profiling: generated CPU top hotspots in {cpu_top_path}")
+        log(f"Background profiling: generated CPU top hotspots in {cpu_top_path}")
     except Exception as e:
-      print(f"Background profiling: failed to scrape CPU profile: {e}")
+      log(f"Background profiling: failed to scrape CPU profile: {e}")
 
     # Generate go_mem_hotspots.txt from heap profile
     if os.path.exists(heap_path):
@@ -1298,7 +1293,7 @@ def scrape_pprof_profiles(iter_dir: str, env: Dict[str, str], stop_event: thread
         with open(go_block_path, "w", encoding="utf-8") as f:
           f.write(block_top.stdout)
     except Exception as e:
-      print(f"Background profiling: failed to scrape block profile: {e}")
+      log(f"Background profiling: failed to scrape block profile: {e}")
 
     if stop_event.is_set():
       return
@@ -1306,18 +1301,18 @@ def scrape_pprof_profiles(iter_dir: str, env: Dict[str, str], stop_event: thread
     # Scrape Execution Trace for Perfetto (/debug/pprof/trace?seconds=10)
     exec_trace_path = os.path.join(profiles_dir, "execution_trace.out")
     try:
-      print(f"Background profiling: scraping 10s execution trace from http://localhost:{local_port}/debug/pprof/trace?seconds=10...")
+      log(f"Background profiling: scraping 10s execution trace from http://localhost:{local_port}/debug/pprof/trace?seconds=10...")
       req = urllib.request.Request(f"http://localhost:{local_port}/debug/pprof/trace?seconds=10")
       with urllib.request.urlopen(req, timeout=20) as resp:
         with open(exec_trace_path, "wb") as out_f:
           out_f.write(resp.read())
-      print(f"Background profiling: saved execution trace to {exec_trace_path}")
+      log(f"Background profiling: saved execution trace to {exec_trace_path}")
       # Write perfetto_url.txt
       perfetto_url_path = os.path.join(profiles_dir, "perfetto_url.txt")
       with open(perfetto_url_path, "w", encoding="utf-8") as f:
         f.write("https://ui.perfetto.dev/ (Upload execution_trace.out or run: go tool trace -http=:0 execution_trace.out)\n")
     except Exception as e:
-      print(f"Background profiling: failed to scrape execution trace: {e}")
+      log(f"Background profiling: failed to scrape execution trace: {e}")
 
   finally:
     pf_proc.terminate()
@@ -1355,7 +1350,7 @@ def main() -> None:
   env = source_env_file(os.path.join(apo_dir, "manifests", "tunables.env"), env)
   env = source_env_file(os.path.join(results_dir, "build_artifacts.env"), env)
 
-  print(f"Starting Substrate E2E TTFI Benchmark execution in {workspace_dir} ({iterations} iterations)...")
+  log(f"Starting Substrate E2E TTFI Benchmark execution in {workspace_dir} ({iterations} iterations)...")
 
   # Step 0: Ensure idempotency
   cleanup_stale_cluster_state(env)
@@ -1363,7 +1358,7 @@ def main() -> None:
   # Step 1: Deploy built custom images if present
   atelet_image = env.get("ATELET_IMAGE")
   if atelet_image:
-    print(f"Deploying custom atelet image: {atelet_image}")
+    log(f"Deploying custom atelet image: {atelet_image}")
     subprocess.run(
         ["kubectl", "set", "image", "daemonset/atelet-substrate-local", "-n", "ate-system", f"atelet={atelet_image}"],
         env=env,
@@ -1378,7 +1373,7 @@ def main() -> None:
   # Step 1b: Deploy custom atenet-router image if present
   atenet_image = env.get("ATENET_IMAGE")
   if atenet_image:
-    print(f"Deploying custom atenet-router image: {atenet_image}")
+    log(f"Deploying custom atenet-router image: {atenet_image}")
     subprocess.run(
         ["kubectl", "set", "image", "deployment/atenet-router", "-n", "ate-system", f"atenet-router={atenet_image}"],
         env=env,
@@ -1395,7 +1390,7 @@ def main() -> None:
   worker_count = env.get("WORKER_COUNT", "1")
   actor_memory = env.get("ACTOR_MEMORY", "1536Mi")
 
-  print(f"Reconciling benchmark worker pool and glutton ActorTemplate (sandbox-class={sandbox_class})...")
+  log(f"Reconciling benchmark worker pool and glutton ActorTemplate (sandbox-class={sandbox_class})...")
   deploy_cmd = [
       "./benchmarking/workloads/deploy.sh",
       "--deploy",
@@ -1409,7 +1404,7 @@ def main() -> None:
 
   ateom_microvm_image = env.get("ATEOM_MICROVM_IMAGE")
   if ateom_microvm_image and sandbox_class == "microvm":
-    print(f"Deploying custom ateom-microvm image: {ateom_microvm_image}")
+    log(f"Deploying custom ateom-microvm image: {ateom_microvm_image}")
     subprocess.run(
         ["kubectl", "set", "image", "deployment/benchmark-ateom", "-n", "benchmark-workloads", f"ateom={ateom_microvm_image}"],
         env=env,
@@ -1453,12 +1448,12 @@ metadata:
 
   top_log_file = os.path.join(results_dir, "benchmark_output.log")
 
-  print(f"=== Executing {iterations} Benchmark Iteration(s) ===")
+  log(f"=== Executing {iterations} Benchmark Iteration(s) ===")
 
   for iter_num in range(1, iterations + 1):
-    print("==========================================================")
-    print(f"=== [Iteration {iter_num} / {iterations}] ===")
-    print("==========================================================")
+    log("==========================================================")
+    log(f"=== [Iteration {iter_num} / {iterations}] ===")
+    log("==========================================================")
 
     iter_dir = os.path.join(results_dir, f"iter_{iter_num}")
     os.makedirs(os.path.join(iter_dir, "monitor"), exist_ok=True)
@@ -1474,7 +1469,7 @@ metadata:
     )
 
     # Reset Postgres actors & ateom pool
-    print("Purging leftover benchmark actors from database...")
+    log("Purging leftover benchmark actors from database...")
     cleanup_stale_cluster_state(env)
 
     # Flush node page caches
@@ -1501,7 +1496,7 @@ metadata:
         runner_image=runner_image,
     )
 
-    print(f"Submitting benchmark runner Job {job_name} for Iteration {iter_num}...")
+    log(f"Submitting benchmark runner Job {job_name} for Iteration {iter_num}...")
     subprocess.run(["kubectl", "apply", "-f", "-"], input=job_yaml, text=True, env=env, check=True)
 
     # Launch background pprof scraping worker
@@ -1514,7 +1509,7 @@ metadata:
     scrape_thread.start()
 
     # Wait for Job to complete
-    print(f"Waiting for benchmark runner Job {job_name} to complete...")
+    log(f"Waiting for benchmark runner Job {job_name} to complete...")
     job_timeout_secs = 600
     wait_cmd = [
         "kubectl",
@@ -1532,7 +1527,7 @@ metadata:
     scrape_thread.join(timeout=10)
 
     if wait_res.returncode != 0:
-      print(f"Job {job_name} did not complete within {job_timeout_secs}s. Checking for failure...")
+      log(f"Job {job_name} did not complete within {job_timeout_secs}s. Checking for failure...")
       subprocess.run(["kubectl", "get", "job", job_name, "-n", "benchmarking", "-o", "yaml"], env=env, check=False)
       subprocess.run(["kubectl", "logs", f"job/{job_name}", "-n", "benchmarking", "--tail=200"], env=env, check=False)
       with open(os.path.join(iter_dir, "error.json"), "w", encoding="utf-8") as f:
@@ -1559,7 +1554,7 @@ metadata:
     subprocess.run(["kubectl", "delete", "job", job_name, "-n", "benchmarking"], env=env, check=False)
 
     # Download stats from GCS (with retry loop as upload may complete right after job completion)
-    print(f"Downloading benchmark results from GCS for Iteration {iter_num} ({run_tag})...")
+    log(f"Downloading benchmark results from GCS for Iteration {iter_num} ({run_tag})...")
     gcs_run_dir = ""
     for attempt in range(12):
       gcs_ls = subprocess.run(
@@ -1589,10 +1584,10 @@ metadata:
       time.sleep(5)
 
     if gcs_run_dir:
-      print(f"Found GCS run directory: {gcs_run_dir}")
+      log(f"Found GCS run directory: {gcs_run_dir}")
       subprocess.run(["gcloud", "storage", "cp", "-r", f"{gcs_run_dir}/*", f"{iter_dir}/"], env=env, check=False)
     else:
-      print(f"Fallback searching for any run files matching {run_tag}...")
+      log(f"Fallback searching for any run files matching {run_tag}...")
       fallback_src = f"{dest}/runs/{test_name}/*/*/*{run_tag}*/*"
       subprocess.run(f"gcloud storage cp -r {fallback_src} '{iter_dir}/'", shell=True, env=env, check=False)
 
@@ -1618,18 +1613,18 @@ metadata:
           check=False,
       )
     except Exception as e:
-      print(f"Warning: could not capture node telemetry: {e}")
+      log(f"Warning: could not capture node telemetry: {e}")
 
     # Parse iteration metrics
     try:
       iter_dest = f"{gcs_run_dir}" if gcs_run_dir else f"{dest}/runs/{test_name}/{run_tag}"
       parse_iteration_stats(iter_dir, test_name, dest_bucket_prefix=iter_dest, env=env)
     except Exception as e:
-      print(f"Error processing iteration {iter_num} results: {e}")
+      log(f"Error processing iteration {iter_num} results: {e}")
       with open(os.path.join(iter_dir, "error.json"), "w", encoding="utf-8") as f:
         json.dump({"error": str(e), "stage": "iter_post_processing"}, f, indent=2)
 
-  print(f"=== Consolidating & Aggregating Metrics across {iterations} Iteration(s) ===")
+  log(f"=== Consolidating & Aggregating Metrics across {iterations} Iteration(s) ===")
   aggregate_iterations(results_dir, iterations)
 
 
