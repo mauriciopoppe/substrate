@@ -2,9 +2,22 @@
   "stacks": [
     {
       "id": "stack-01",
+      "cluster_name": "substrate-test",
+      "project_id": "mauriciopoppe-gke-dev",
+      "compute_zone": "us-west1-c",
+      "compute_region": "us-west1",
+      "hardware_type": "c3-standard-4",
+      "node_count": 2,
+      "status": "IDLE"
+    },
+    {
+      "id": "stack-02",
       "cluster_name": "substrate-test-2",
-      "zone": "us-west1-c",
-      "hardware_type": "c3-standard-44",
+      "project_id": "mauriciopoppe-gke-dev",
+      "compute_zone": "us-west1-c",
+      "compute_region": "us-west1",
+      "hardware_type": "c3-standard-4",
+      "node_count": 3,
       "status": "IDLE"
     }
   ]

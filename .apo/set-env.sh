@@ -32,8 +32,10 @@ else
   python3 -m pip install optuna pyyaml --quiet -i https://pypi.org/simple
 fi
 
-# Source hardware stack parameters staged by the orchestrator in the worktree
-if [ -f "${SCRIPT_DIR}/stack.env" ]; then
+# Source hardware stack parameters staged by the orchestrator in the worktree or defined in stacks.env
+if [ -f "${SCRIPT_DIR}/stacks.env" ]; then
+  source "${SCRIPT_DIR}/stacks.env"
+elif [ -f "${SCRIPT_DIR}/stack.env" ]; then
   source "${SCRIPT_DIR}/stack.env"
 fi
 

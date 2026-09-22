@@ -19,7 +19,9 @@ tmp
 __pycache__/
 *.pyc
 optuna_study.db*
-stack*.env
+stack.env
+stack.*.env
+stack.env.*
 
 # WorkQueue ephemera & operational state
 results/state.json
