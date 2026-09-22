@@ -1144,6 +1144,21 @@ def main() -> None:
         check=False,
     )
 
+  # Step 1b: Deploy custom atenet-router image if present
+  atenet_image = env.get("ATENET_IMAGE")
+  if atenet_image:
+    print(f"Deploying custom atenet-router image: {atenet_image}")
+    subprocess.run(
+        ["kubectl", "set", "image", "deployment/atenet-router", "-n", "ate-system", f"atenet-router={atenet_image}"],
+        env=env,
+        check=False,
+    )
+    subprocess.run(
+        ["kubectl", "rollout", "status", "deployment/atenet-router", "-n", "ate-system", "--timeout=120s"],
+        env=env,
+        check=False,
+    )
+
   # Step 2: Reconcile WorkerPool and ActorTemplate
   sandbox_class = env.get("SANDBOX_CLASS", "gvisor")
   worker_count = env.get("WORKER_COUNT", "1")
@@ -1198,7 +1213,7 @@ metadata:
   trace_prob = env.get("TRACE_PROBABILITY", "1.0")
   bucket_name = env.get("BUCKET_NAME", f"ate-snapshots-{project_id}-us-west1-c")
   dest = f"gs://{bucket_name}/benchmarks"
-  runner_image = f"us-docker.pkg.dev/{project_id}/gcr.io/ate-images/locust-test:latest"
+  runner_image = env.get("RUNNER_IMAGE", f"us-docker.pkg.dev/{project_id}/gcr.io/ate-images/locust-test:latest")
 
   mem_target = env.get("BENCHMARK_MEM_TARGET", "512Mi")
   mem_churn = env.get("BENCHMARK_MEM_CHURN", "64Mi")
