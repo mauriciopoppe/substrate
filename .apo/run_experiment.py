@@ -157,280 +157,466 @@ def upload_trace_to_private_bucket(trace_path: str, dest_bucket_prefix: str, env
     return None
 
 
+def fetch_cloud_trace_spans(trace_id: str, project_id: str = 'mauriciopoppe-gke-dev') -> List[Dict[str, Any]]:
+  """Fetches server-side spans for trace_id from Google Cloud Trace API."""
+  if not trace_id:
+    return []
+  try:
+    token_proc = subprocess.run(
+        ['gcloud', 'auth', 'application-default', 'print-access-token'],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if token_proc.returncode != 0:
+      return []
+    token = token_proc.stdout.strip()
+    if not token:
+      return []
+
+    url = f'https://cloudtrace.googleapis.com/v1/projects/{project_id}/traces/{trace_id}'
+    req = urllib.request.Request(url, headers={'Authorization': f'Bearer {token}'})
+    with urllib.request.urlopen(req, timeout=10) as resp:
+      if resp.status != 200:
+        return []
+      data = json.loads(resp.read().decode('utf-8'))
+      return data.get('spans', [])
+  except Exception as e:
+    return []
+
+
+def parse_iso_to_us(iso_str: str) -> int:
+  """Parses ISO8601 timestamp with nanoseconds into microseconds integer."""
+  if not iso_str:
+    return 0
+  try:
+    clean_str = iso_str.replace('Z', '+00:00')
+    dt = datetime.fromisoformat(clean_str)
+    return int(dt.timestamp() * 1e6)
+  except Exception:
+    return 0
+
+
+def classify_span_lane(name: str, service: str) -> Tuple[int, str]:
+  """Maps span to lane tid and category:
+  tid 2: Client Request Spans
+  tid 3: Router ExtProc
+  tid 4: Control Plane (ate-api-server)
+  tid 5: Worker Node & MicroVM (Ateom & Storage)
+  """
+  name_l = name.lower()
+  svc_l = service.lower()
+  if 'router' in svc_l or 'extproc' in name_l or 'router' in name_l:
+    return 3, 'ROUTER'
+  elif 'ateapi' in svc_l or 'ateapi' in name_l or name_l.startswith('step.'):
+    return 4, 'CONTROL'
+  elif 'ateom' in svc_l or 'atelet' in svc_l or 'restore' in name_l or 'storage' in name_l or 'gcs' in name_l or 'run' in name_l:
+    return 5, 'WORKER'
+  return 2, 'REQUEST'
+
+
 def build_perfetto_trace_from_benchmark(
     iter_dir: str,
-    dest_bucket_prefix: str = "",
+    dest_bucket_prefix: str = '',
     env: Optional[Dict[str, str]] = None,
 ) -> Optional[str]:
-  """Synthesizes perfetto_trace.json from execution_trace.out, traces.txt, and logs.txt.
-  Uploads to the user's private benchmark bucket if dest_bucket_prefix is provided.
-  Returns the path to perfetto_trace.json if created, else None."""
-  profiles_dir = os.path.join(iter_dir, "profiles")
+  """Synthesizes multi-tier perfetto_trace.json and focused perfetto_request_profile.json
+  from traces.txt and Google Cloud Trace distributed spans.
+  Also generates their compact .txt digests and 1-click Perfetto UI URLs."""
+  profiles_dir = os.path.join(iter_dir, 'profiles')
   os.makedirs(profiles_dir, exist_ok=True)
-  perfetto_trace_path = os.path.join(profiles_dir, "perfetto_trace.json")
-  exec_trace_path = os.path.join(profiles_dir, "execution_trace.out")
+  perfetto_trace_path = os.path.join(profiles_dir, 'perfetto_trace.json')
 
-  # 1. Attempt conversion using go tool trace if execution_trace.out exists
-  if os.path.exists(exec_trace_path) and os.path.getsize(exec_trace_path) > 0:
-    try:
-      # Try go tool trace -d=parsed or converting to json if supported
-      # In modern Go, go tool trace can run an internal web server or dump info
-      pass
-    except Exception as e:
-      print(f"Warning: go tool trace conversion failed: {e}")
-
-  # 2. Extract spans from traces.txt or logs.txt if present
-  traces_path = os.path.join(iter_dir, "traces.txt")
-  logs_path = os.path.join(iter_dir, "benchmark_output.log")
-  spans: List[Dict[str, Any]] = []
-
-  # Lanes:
-  # 1: Macro Lifecycle (Test Phase, Runner Life)
-  # 2: Request Spans (Client Requests, Boomer/Locust)
-  # 3: Router & ExtProc (atenet-router, ext_proc)
-  # 4: MicroVM Lifecycle (Firecracker, Atelet, Restore)
+  traces_path = os.path.join(iter_dir, 'traces.txt')
   track_metadata = [
-      {"name": "process_name", "ph": "M", "pid": 1, "args": {"name": "Substrate E2E TTFI Benchmark"}},
-      {"name": "process_sort_index", "ph": "M", "pid": 1, "args": {"sort_index": 0}},
-      {"name": "thread_name", "ph": "M", "pid": 1, "tid": 1, "args": {"name": "Macro Lifecycle"}},
-      {"name": "thread_sort_index", "ph": "M", "pid": 1, "tid": 1, "args": {"sort_index": 1}},
-      {"name": "thread_name", "ph": "M", "pid": 1, "tid": 2, "args": {"name": "Client Request Spans"}},
-      {"name": "thread_sort_index", "ph": "M", "pid": 1, "tid": 2, "args": {"sort_index": 2}},
-      {"name": "thread_name", "ph": "M", "pid": 1, "tid": 3, "args": {"name": "Router ExtProc"}},
-      {"name": "thread_sort_index", "ph": "M", "pid": 1, "tid": 3, "args": {"sort_index": 3}},
-      {"name": "thread_name", "ph": "M", "pid": 1, "tid": 4, "args": {"name": "Atelet MicroVM Restore"}},
-      {"name": "thread_sort_index", "ph": "M", "pid": 1, "tid": 4, "args": {"sort_index": 4}},
+      {'name': 'process_name', 'ph': 'M', 'pid': 1, 'args': {'name': 'Substrate E2E TTFI Benchmark'}},
+      {'name': 'process_sort_index', 'ph': 'M', 'pid': 1, 'args': {'sort_index': 0}},
+      {'name': 'thread_name', 'ph': 'M', 'pid': 1, 'tid': 1, 'args': {'name': 'Macro Lifecycle'}},
+      {'name': 'thread_sort_index', 'ph': 'M', 'pid': 1, 'tid': 1, 'args': {'sort_index': 1}},
+      {'name': 'thread_name', 'ph': 'M', 'pid': 1, 'tid': 2, 'args': {'name': 'Client Request Spans'}},
+      {'name': 'thread_sort_index', 'ph': 'M', 'pid': 1, 'tid': 2, 'args': {'sort_index': 2}},
+      {'name': 'thread_name', 'ph': 'M', 'pid': 1, 'tid': 3, 'args': {'name': 'Router ExtProc'}},
+      {'name': 'thread_sort_index', 'ph': 'M', 'pid': 1, 'tid': 3, 'args': {'sort_index': 3}},
+      {'name': 'thread_name', 'ph': 'M', 'pid': 1, 'tid': 4, 'args': {'name': 'Control Plane (ate-api-server)'}},
+      {'name': 'thread_sort_index', 'ph': 'M', 'pid': 1, 'tid': 4, 'args': {'sort_index': 4}},
+      {'name': 'thread_name', 'ph': 'M', 'pid': 1, 'tid': 5, 'args': {'name': 'Worker Node & Storage (Ateom & GCS)'}},
+      {'name': 'thread_sort_index', 'ph': 'M', 'pid': 1, 'tid': 5, 'args': {'sort_index': 5}},
   ]
 
   events: List[Dict[str, Any]] = []
-  actor_threads: Dict[str, int] = {}
+  raw_client_spans: List[Dict[str, Any]] = []
   header_map: Optional[Dict[str, int]] = None
 
   if os.path.exists(traces_path):
     try:
-      with open(traces_path, "r", encoding="utf-8", errors="replace") as f:
-        reader = csv.reader(f, delimiter="\t")
+      with open(traces_path, 'r', encoding='utf-8', errors='replace') as f:
+        reader = csv.reader(f, delimiter='	')
         for row in reader:
           if not row or len(row) < 3:
             continue
-          # Check for TSV header
-          if row[0] == "time" or (len(row) > 1 and row[1] == "actor"):
+          if row[0] == 'time' or (len(row) > 1 and row[1] == 'actor'):
             header_map = {col.strip(): idx for idx, col in enumerate(row)}
             continue
 
           if header_map:
-            t_str = row[header_map["time"]] if "time" in header_map and len(row) > header_map["time"] else row[0]
-            actor = row[header_map["actor"]] if "actor" in header_map and len(row) > header_map["actor"] else ""
-            name = row[header_map["name"]] if "name" in header_map and len(row) > header_map["name"] else row[1]
-            dur_ms_str = row[header_map["duration_ms"]] if "duration_ms" in header_map and len(row) > header_map["duration_ms"] else row[2]
-            src = row[header_map["latency_source"]] if "latency_source" in header_map and len(row) > header_map["latency_source"] else ""
-            trace_id = row[header_map["trace_id"]] if "trace_id" in header_map and len(row) > header_map["trace_id"] else ""
-            err = row[header_map["err"]] if "err" in header_map and len(row) > header_map["err"] else ""
+            t_str = row[header_map['time']] if 'time' in header_map and len(row) > header_map['time'] else row[0]
+            actor = row[header_map['actor']] if 'actor' in header_map and len(row) > header_map['actor'] else ''
+            name = row[header_map['name']] if 'name' in header_map and len(row) > header_map['name'] else row[1]
+            dur_ms_str = row[header_map['duration_ms']] if 'duration_ms' in header_map and len(row) > header_map['duration_ms'] else row[2]
+            src = row[header_map['latency_source']] if 'latency_source' in header_map and len(row) > header_map['latency_source'] else ''
+            trace_id = row[header_map['trace_id']] if 'trace_id' in header_map and len(row) > header_map['trace_id'] else ''
+            err = row[header_map['err']] if 'err' in header_map and len(row) > header_map['err'] else ''
           else:
-            # Fallback without header: 7 cols (with actor) vs 6 cols (legacy)
             if len(row) >= 7:
-              t_str = row[0]
-              actor = row[1]
-              name = row[2]
-              dur_ms_str = row[3]
-              src = row[4]
-              trace_id = row[5]
-              err = row[6]
+              t_str, actor, name, dur_ms_str, src, trace_id, err = row[0], row[1], row[2], row[3], row[4], row[5], row[6]
             else:
-              t_str = row[0]
-              actor = ""
-              name = row[1]
-              dur_ms_str = row[2]
-              src = row[3] if len(row) > 3 else ""
-              trace_id = row[4] if len(row) > 4 else ""
-              err = row[5] if len(row) > 5 else ""
+              t_str, actor, name, dur_ms_str = row[0], '', row[1], row[2]
+              src = row[3] if len(row) > 3 else ''
+              trace_id = row[4] if len(row) > 4 else ''
+              err = row[5] if len(row) > 5 else ''
 
           try:
             dur_us = int(float(dur_ms_str) * 1000)
           except (ValueError, TypeError):
             continue
 
-          # Parse ISO timestamp if available or relative
-          ts_us = 0
-          if t_str:
-            try:
-              t_str_clean = t_str.replace("Z", "+00:00")
-              dt = datetime.fromisoformat(t_str_clean)
-              ts_us = int(dt.timestamp() * 1e6)
-            except Exception:
-              pass
-
-          # t_str is the completion timestamp logged when the span ended.
-          # For Perfetto Complete Events ("X"), "ts" is the starting time of the slice.
-          # Therefore, start_ts = end_ts - duration.
+          ts_us = parse_iso_to_us(t_str)
           start_ts_us = max(0, ts_us - dur_us) if ts_us > 0 else 0
 
-          lane = 2
-          cat = "REQUEST"
-          if "router" in name.lower() or "extproc" in name.lower():
-            lane = 3
-            cat = "ROUTER"
-          elif "restore" in name.lower() or "snapshot" in name.lower() or "microvm" in name.lower():
-            lane = 4
-            cat = "MICROVM"
-          elif actor:
-            if actor not in actor_threads:
-              actor_tid = 10 + len(actor_threads)
-              actor_threads[actor] = actor_tid
-              track_metadata.append({
-                  "name": "thread_name",
-                  "ph": "M",
-                  "pid": 1,
-                  "tid": actor_tid,
-                  "args": {"name": f"Actor: {actor}"},
-              })
-              track_metadata.append({
-                  "name": "thread_sort_index",
-                  "ph": "M",
-                  "pid": 1,
-                  "tid": actor_tid,
-                  "args": {"sort_index": 10 + len(actor_threads)},
-              })
-            lane = actor_threads[actor]
-
-          ev = {
-              "name": name,
-              "cat": cat,
-              "ph": "X",
-              "ts": start_ts_us,
-              "dur": dur_us,
-              "pid": 1,
-              "tid": lane,
-              "args": {
-                  "actor": actor,
-                  "source": src,
-                  "trace_id": trace_id,
-                  "error": err,
+          span_info = {
+              'name': name,
+              'cat': 'REQUEST',
+              'ph': 'X',
+              'ts': start_ts_us,
+              'raw_ts': start_ts_us,
+              'dur': dur_us,
+              'pid': 1,
+              'tid': 2,
+              'base_lane': 2,
+              'args': {
+                  'actor': actor,
+                  'source': src,
+                  'trace_id': trace_id,
+                  'error': err,
               },
           }
-          events.append(ev)
+          raw_client_spans.append(span_info)
+          events.append(span_info)
     except Exception as e:
-      print(f"Warning: Failed reading {traces_path}: {e}")
+      print(f'Warning: Failed reading {traces_path}: {e}')
 
-  # If no traces from traces.txt, check benchmark logs or synthesize macro lifecycle
+  # Identify Cold Boot and P90 Warm Boot operations
+  cold_span: Optional[Dict[str, Any]] = None
+  warm_p90_span: Optional[Dict[str, Any]] = None
+
+  for s in raw_client_spans:
+    if s['name'] == 'ResumeActorColdStart':
+      cold_span = s
+      break
+
+  warm_resumes = [s for s in raw_client_spans if s['name'] == 'ResumeActor']
+  if warm_resumes:
+    warm_resumes_sorted = sorted(warm_resumes, key=lambda x: x['dur'])
+    p90_idx = min(int(0.90 * len(warm_resumes_sorted)), len(warm_resumes_sorted) - 1)
+    warm_p90_span = warm_resumes_sorted[p90_idx]
+
+  # Fetch server-side distributed child spans from Cloud Trace for Cold and P90 Warm Boot
+  selected_traces: Dict[str, Dict[str, Any]] = {}
+  if cold_span and cold_span['args'].get('trace_id'):
+    selected_traces['cold'] = {
+        'trace_id': cold_span['args']['trace_id'],
+        'client_span': cold_span,
+        'label': 'Cold Boot',
+    }
+  if warm_p90_span and warm_p90_span['args'].get('trace_id'):
+    selected_traces['warm'] = {
+        'trace_id': warm_p90_span['args']['trace_id'],
+        'client_span': warm_p90_span,
+        'label': 'Warm Boot (P90)',
+    }
+
+  project_id = env.get('PROJECT_ID', 'mauriciopoppe-gke-dev') if env else 'mauriciopoppe-gke-dev'
+  child_events: List[Dict[str, Any]] = []
+  profile_events_by_episode: Dict[str, List[Dict[str, Any]]] = {'cold': [], 'warm': []}
+
+  for ep_key, ep_info in selected_traces.items():
+    tid_hex = ep_info['trace_id']
+    server_spans = fetch_cloud_trace_spans(tid_hex, project_id=project_id)
+    if not server_spans:
+      continue
+
+    # Map server spans into lanes
+    for s in server_spans:
+      s_name = s.get('name', '')
+      # Skip the root client span if already present in traces.txt
+      if s_name in ('ResumeActor', 'ResumeActorColdStart') and not s.get('parentSpanId'):
+        continue
+
+      s_start_us = parse_iso_to_us(s.get('startTime', ''))
+      s_end_us = parse_iso_to_us(s.get('endTime', ''))
+      s_dur_us = max(1, s_end_us - s_start_us)
+
+      svc_name = s.get('labels', {}).get('service.name', '')
+      lane_tid, cat = classify_span_lane(s_name, svc_name)
+
+      ev = {
+          'name': s_name,
+          'cat': cat,
+          'ph': 'X',
+          'ts': s_start_us,
+          'dur': s_dur_us,
+          'pid': 1,
+          'tid': lane_tid,
+          'base_lane': lane_tid,
+          'args': {
+              'service': svc_name,
+              'span_id': s.get('spanId', ''),
+              'parent_span_id': s.get('parentSpanId', ''),
+              'episode': ep_info['label'],
+          },
+      }
+      child_events.append(dict(ev))
+      profile_events_by_episode[ep_key].append(dict(ev))
+
+  events.extend(child_events)
+
+  def fits_in_lane(slice_to_add: Dict[str, Any], lane_slices: List[Dict[str, Any]]) -> bool:
+    s_start = slice_to_add['ts']
+    s_end = s_start + slice_to_add.get('dur', 0)
+    for existing in lane_slices:
+      e_start = existing['ts']
+      e_end = e_start + existing.get('dur', 0)
+      if s_end <= e_start or s_start >= e_end:
+        continue
+      if (s_start >= e_start and s_end <= e_end) or (e_start >= s_start and e_end <= s_end):
+        continue
+      return False
+    return True
+
+  def pack_non_overlapping_tracks(all_slices: List[Dict[str, Any]]) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    by_category: Dict[int, List[Dict[str, Any]]] = {}
+    for s in all_slices:
+      cat_id = s.get('base_lane', s.get('tid', 1))
+      by_category.setdefault(cat_id, []).append(s)
+
+    assigned_slices: List[Dict[str, Any]] = []
+    dyn_metadata: List[Dict[str, Any]] = [
+        {'name': 'process_name', 'ph': 'M', 'pid': 1, 'args': {'name': 'Substrate E2E TTFI Benchmark'}},
+        {'name': 'process_sort_index', 'ph': 'M', 'pid': 1, 'args': {'sort_index': 0}},
+    ]
+
+    track_names = {
+        1: 'Macro Lifecycle',
+        2: 'Client Request Spans',
+        3: 'Router ExtProc',
+        4: 'Control Plane (ate-api-server)',
+        5: 'Worker Node & Storage',
+    }
+
+    global_lane_idx = 1
+    for cat_id in sorted(by_category.keys()):
+      cat_slices = by_category[cat_id]
+      cat_slices.sort(key=lambda s: (s['ts'], -s.get('dur', 0)))
+      lanes: List[List[Dict[str, Any]]] = []
+      for s in cat_slices:
+        placed = False
+        for lane in lanes:
+          if fits_in_lane(s, lane):
+            lane.append(s)
+            placed = True
+            break
+        if not placed:
+          lanes.append([s])
+
+      base_name = track_names.get(cat_id, f'Tier {cat_id}')
+      for sub_idx, lane_slices in enumerate(lanes):
+        lane_tid = 100 * cat_id + sub_idx
+        name = base_name if len(lanes) == 1 else f'{base_name} #{sub_idx + 1}'
+        dyn_metadata.append({
+            'name': 'thread_name', 'ph': 'M', 'pid': 1, 'tid': lane_tid,
+            'args': {'name': name},
+        })
+        dyn_metadata.append({
+            'name': 'thread_sort_index', 'ph': 'M', 'pid': 1, 'tid': lane_tid,
+            'args': {'sort_index': global_lane_idx},
+        })
+        global_lane_idx += 1
+        for s in lane_slices:
+          s_copy = dict(s)
+          s_copy['tid'] = lane_tid
+          assigned_slices.append(s_copy)
+
+    assigned_slices.sort(key=lambda s: (s['ts'], -s.get('dur', 0)))
+    return dyn_metadata, assigned_slices
+
   if not events:
-    # Synthesize at least macro phase so perfetto trace digest has ground truth horizon
     events.append({
-        "name": "Substrate E2E TTFI Benchmark Execution",
-        "cat": "PHASE",
-        "ph": "X",
-        "ts": 0,
-        "dur": 30000000,  # 30s
-        "pid": 1,
-        "tid": 1,
-        "args": {"phase": "benchmark_run"},
-    })
-    events.append({
-        "name": "Benchmark Completed",
-        "cat": "MILESTONE",
-        "ph": "I",
-        "s": "g",
-        "ts": 30000000,
-        "pid": 1,
-        "tid": 1,
-        "args": {"condition": "Completed"},
+        'name': 'Substrate E2E TTFI Benchmark Execution',
+        'cat': 'PHASE',
+        'ph': 'X',
+        'ts': 0,
+        'dur': 30000000,
+        'pid': 1,
+        'tid': 1,
+        'args': {'phase': 'workload'},
     })
   else:
-    # Sort events chronologically by start timestamp (ts).
-    # When start times are equal, sort by duration descending (-dur) so that
-    # parent/enclosing slices are written before child/nested slices.
     events.sort(key=lambda e: (e["ts"], -e.get("dur", 0)))
-
-    # Defensive fix for clock skew/jitter: ensure slices on the same thread
-    # do not partially overlap. If slice B starts before slice A ends, but slice B
-    # extends beyond slice A (partial overlap), clamp slice B start time to slice A end time.
-    # If slice B is completely contained within slice A (B.end <= A.end), it is
-    # a valid nested child slice and is left untouched.
-    tid_stacks: Dict[int, List[Dict[str, Any]]] = {}
-    for ev in events:
-      tid = ev["tid"]
-      stack = tid_stacks.setdefault(tid, [])
-      while stack and (stack[-1]["ts"] + stack[-1].get("dur", 0) <= ev["ts"]):
-        stack.pop()
-      if stack:
-        parent = stack[-1]
-        ev_end = ev["ts"] + ev.get("dur", 0)
-        parent_end = parent["ts"] + parent.get("dur", 0)
-        if ev_end > parent_end:
-          ev["ts"] = parent_end
-          while stack and (stack[-1]["ts"] + stack[-1].get("dur", 0) <= ev["ts"]):
-            stack.pop()
-      stack.append(ev)
-
-    # Re-sort in case any timestamps were clamped
-    events.sort(key=lambda e: (e["ts"], -e.get("dur", 0)))
-
-    # Normalize timestamps relative to min_ts
-    min_ts = min(e["ts"] for e in events if e["ts"] > 0) if any(e["ts"] > 0 for e in events) else 0
+    min_ts = min(e['ts'] for e in events if e['ts'] > 0) if any(e['ts'] > 0 for e in events) else 0
     if min_ts > 0:
       for e in events:
-        if e["ts"] >= min_ts:
-          e["ts"] = e["ts"] - min_ts
-    # Add macro lifecycle enclosing phase
-    max_end = max(e["ts"] + e.get("dur", 0) for e in events)
+        if e['ts'] >= min_ts:
+          e['ts'] = e['ts'] - min_ts
+
+    max_end = max(e['ts'] + e.get('dur', 0) for e in events)
     events.insert(0, {
-        "name": "Substrate E2E TTFI Workload Execution",
-        "cat": "PHASE",
-        "ph": "X",
-        "ts": 0,
-        "dur": max(1000, max_end),
-        "pid": 1,
-        "tid": 1,
-        "args": {"phase": "workload"},
+        'name': 'Substrate E2E TTFI Workload Execution',
+        'cat': 'PHASE',
+        'ph': 'X',
+        'ts': 0,
+        'dur': max(1000, max_end),
+        'pid': 1,
+        'tid': 1,
+        'args': {'phase': 'workload'},
     })
     events.append({
-        "name": "Benchmark Satiated (Node/Actor Ready)",
-        "cat": "MILESTONE",
-        "ph": "I",
-        "s": "g",
-        "ts": max_end,
-        "pid": 1,
-        "tid": 1,
-        "args": {"status": "Complete"},
+        'name': 'Benchmark Satiated (Node/Actor Ready)',
+        'cat': 'MILESTONE',
+        'ph': 'I',
+        's': 'g',
+        'ts': max_end,
+        'pid': 1,
+        'tid': 1,
+        'args': {'status': 'Complete'},
     })
 
-  final_trace = {"traceEvents": track_metadata + events}
+  macro_meta, macro_slices = pack_non_overlapping_tracks(events)
+  final_trace = {'traceEvents': macro_meta + macro_slices}
   try:
-    payload_str = json.dumps(final_trace, indent=2)
-    with open(perfetto_trace_path, "w", encoding="utf-8") as f:
-      f.write(payload_str)
-    print(f"Generated Perfetto Trace: {perfetto_trace_path} ({len(events)} events across lanes)")
+    with open(perfetto_trace_path, 'w', encoding='utf-8') as f:
+      json.dump(final_trace, f, indent=2)
+    print(f'Generated Unified Perfetto Trace: {perfetto_trace_path} ({len(events)} events across lanes)')
 
-    # Synthesize compact Perfetto Trace Digest using apo-provider-perfetto
     if compute_trace_digest is not None:
       try:
-        digest_text = compute_trace_digest(final_trace["traceEvents"], trace_name="perfetto_trace.json")
-        digest_path = os.path.join(profiles_dir, "perfetto_trace_digest.txt")
-        with open(digest_path, "w", encoding="utf-8") as f:
+        digest_text = compute_trace_digest(final_trace['traceEvents'], trace_name='perfetto_trace.json')
+        digest_path = os.path.join(profiles_dir, 'perfetto_trace_digest.txt')
+        with open(digest_path, 'w', encoding='utf-8') as f:
           f.write(digest_text)
-        print(f"Generated Perfetto Trace Digest: {digest_path} ({len(digest_text)} bytes)")
+        print(f'Generated Perfetto Trace Digest: {digest_path} ({len(digest_text)} bytes)')
       except Exception as de:
-        print(f"Warning: Failed to generate Perfetto trace digest: {de}", file=sys.stderr)
+        print(f'Warning: Failed to generate Perfetto trace digest: {de}', file=sys.stderr)
 
-    # Upload to Perfetto UI using unguessable content hash (1-click permalink)
     ui_url = upload_trace_to_perfetto_ui(perfetto_trace_path)
+    upload_trace_to_private_bucket(perfetto_trace_path, dest_bucket_prefix, env=env)
+    with open(os.path.join(profiles_dir, 'perfetto_url.txt'), 'w', encoding='utf-8') as f:
+      f.write(f"{ui_url}\n" if ui_url else "https://ui.perfetto.dev/\n")
 
-    # Also archive to user's private benchmark bucket if provided
-    private_gcs_uri = upload_trace_to_private_bucket(perfetto_trace_path, dest_bucket_prefix, env=env)
+    # Build Isolated Cold Boot Trace
+    if cold_span and 'raw_ts' in cold_span:
+      cold_events = []
+      cold_root = dict(cold_span)
+      cold_root['ts'] = cold_span['raw_ts']
+      cold_events.append(cold_root)
+      for ce in profile_events_by_episode.get('cold', []):
+        cold_events.append(dict(ce))
 
-    perfetto_url_path = os.path.join(profiles_dir, "perfetto_url.txt")
-    with open(perfetto_url_path, "w", encoding="utf-8") as f:
-      if ui_url:
-        f.write(f"{ui_url}\n")
-      else:
-        f.write("https://ui.perfetto.dev/ (Open perfetto_trace.json locally)\n")
-    if ui_url:
-      print(f"1-Click Perfetto UI Permalink: {ui_url}")
+      if cold_events:
+        c_min_ts = min(e['ts'] for e in cold_events)
+        for e in cold_events:
+          e['ts'] = e['ts'] - c_min_ts
+        cold_events.sort(key=lambda e: (e['ts'], -e.get('dur', 0)))
+        c_max_end = max(e['ts'] + e.get('dur', 0) for e in cold_events)
+        cold_events.insert(0, {
+            'name': '[Episode] Cold Boot Lifecycle',
+            'cat': 'PHASE',
+            'ph': 'X',
+            'ts': 0,
+            'dur': c_max_end,
+            'pid': 1,
+            'tid': 1,
+            'args': {'episode': 'cold_boot'},
+        })
+
+        c_meta, c_slices = pack_non_overlapping_tracks(cold_events)
+        cold_trace = {'traceEvents': c_meta + c_slices}
+        cold_path = os.path.join(profiles_dir, 'perfetto_cold_boot.json')
+        with open(cold_path, 'w', encoding='utf-8') as f:
+          json.dump(cold_trace, f, indent=2)
+        print(f'Generated Cold Boot Trace: {cold_path} ({len(cold_events)} events)')
+
+        if compute_trace_digest is not None:
+          try:
+            c_digest_text = compute_trace_digest(cold_trace['traceEvents'], trace_name='perfetto_cold_boot.json')
+            c_digest_path = os.path.join(profiles_dir, 'perfetto_cold_boot_digest.txt')
+            with open(c_digest_path, 'w', encoding='utf-8') as f:
+              f.write(c_digest_text)
+            print(f'Generated Cold Boot Digest: {c_digest_path} ({len(c_digest_text)} bytes)')
+          except Exception as cde:
+            print(f'Warning: Failed to generate cold boot digest: {cde}', file=sys.stderr)
+
+        c_ui_url = upload_trace_to_perfetto_ui(cold_path)
+        upload_trace_to_private_bucket(cold_path, dest_bucket_prefix, env=env)
+        with open(os.path.join(profiles_dir, 'perfetto_cold_boot_url.txt'), 'w', encoding='utf-8') as f:
+          f.write(f'{c_ui_url}\n' if c_ui_url else 'https://ui.perfetto.dev/\n')
+        if c_ui_url:
+          print(f'1-Click Cold Boot UI Permalink: {c_ui_url}')
+
+    # Build Isolated Warm Boot (P90) Trace
+    if warm_p90_span and 'raw_ts' in warm_p90_span:
+      warm_events = []
+      warm_root = dict(warm_p90_span)
+      warm_root['ts'] = warm_p90_span['raw_ts']
+      warm_events.append(warm_root)
+      for we in profile_events_by_episode.get('warm', []):
+        warm_events.append(dict(we))
+
+      if warm_events:
+        w_min_ts = min(e['ts'] for e in warm_events)
+        for e in warm_events:
+          e['ts'] = e['ts'] - w_min_ts
+        warm_events.sort(key=lambda e: (e['ts'], -e.get('dur', 0)))
+        w_max_end = max(e['ts'] + e.get('dur', 0) for e in warm_events)
+        warm_events.insert(0, {
+            'name': '[Episode] Warm Boot (P90) Lifecycle',
+            'cat': 'PHASE',
+            'ph': 'X',
+            'ts': 0,
+            'dur': w_max_end,
+            'pid': 1,
+            'tid': 1,
+            'args': {'episode': 'warm_boot_p90'},
+        })
+
+        w_meta, w_slices = pack_non_overlapping_tracks(warm_events)
+        warm_trace = {'traceEvents': w_meta + w_slices}
+        warm_path = os.path.join(profiles_dir, 'perfetto_warm_boot.json')
+        with open(warm_path, 'w', encoding='utf-8') as f:
+          json.dump(warm_trace, f, indent=2)
+        print(f'Generated Warm Boot Trace: {warm_path} ({len(warm_events)} events)')
+
+        if compute_trace_digest is not None:
+          try:
+            w_digest_text = compute_trace_digest(warm_trace['traceEvents'], trace_name='perfetto_warm_boot.json')
+            w_digest_path = os.path.join(profiles_dir, 'perfetto_warm_boot_digest.txt')
+            with open(w_digest_path, 'w', encoding='utf-8') as f:
+              f.write(w_digest_text)
+            print(f'Generated Warm Boot Digest: {w_digest_path} ({len(w_digest_text)} bytes)')
+          except Exception as wde:
+            print(f'Warning: Failed to generate warm boot digest: {wde}', file=sys.stderr)
+
+        w_ui_url = upload_trace_to_perfetto_ui(warm_path)
+        upload_trace_to_private_bucket(warm_path, dest_bucket_prefix, env=env)
+        with open(os.path.join(profiles_dir, 'perfetto_warm_boot_url.txt'), 'w', encoding='utf-8') as f:
+          f.write(f'{w_ui_url}\n' if w_ui_url else 'https://ui.perfetto.dev/\n')
+        if w_ui_url:
+          print(f'1-Click Warm Boot UI Permalink: {w_ui_url}')
 
     return perfetto_trace_path
   except Exception as e:
-    print(f"Warning: Failed writing Perfetto trace: {e}")
+    print(f'Warning: Failed writing Perfetto trace: {e}')
     return None
+
 
 
 def parse_iteration_stats(
@@ -546,6 +732,10 @@ def parse_iteration_stats(
           "execution_trace_path": os.path.join(iter_dir, "profiles", "execution_trace.out"),
           "perfetto_trace_path": os.path.join(iter_dir, "profiles", "perfetto_trace.json"),
           "perfetto_trace_digest_path": os.path.join(iter_dir, "profiles", "perfetto_trace_digest.txt"),
+          "perfetto_cold_boot_path": os.path.join(iter_dir, "profiles", "perfetto_cold_boot.json"),
+          "perfetto_cold_boot_digest_path": os.path.join(iter_dir, "profiles", "perfetto_cold_boot_digest.txt"),
+          "perfetto_warm_boot_path": os.path.join(iter_dir, "profiles", "perfetto_warm_boot.json"),
+          "perfetto_warm_boot_digest_path": os.path.join(iter_dir, "profiles", "perfetto_warm_boot_digest.txt"),
       },
       "raw_stats": raw_stats,
   }
@@ -634,13 +824,19 @@ Staged from Median iteration: `iter_{median_idx}`.
 Agents evaluating this trial should read artifacts in descending order of priority:
 
 ### 1. Primary Analysis (Start Here - Low Tokens, High Signal)
-1. **`monitor/profile/perfetto_trace_digest.txt`** (REQUIRED FIRST READ):
-   - Compact text digest synthesized across all trace lanes.
-   - Pinpoints the **primary sequential critical path**, phase durations, milestone offsets, and identifies off-critical-path background operations that overlap 100% with the main path.
-2. **`summary.json`**:
+1. **`monitor/profile/perfetto_cold_boot_digest.txt`** (Cold Boot Request Digest):
+   - Compact text digest for single cold-boot request drill-down (Client -> ExtProc -> Control Plane -> Ateom.RunWorkload).
+2. **`monitor/profile/perfetto_warm_boot_digest.txt`** (P90 Warm Boot Request Digest):
+   - Compact text digest for single P90 warm-boot restore drill-down (Client -> ExtProc -> Control Plane -> Ateom.RestoreWorkload + parallel GCS chunk reads).
+3. **`monitor/profile/perfetto_trace_digest.txt`** (Macro Benchmark Digest):
+   - Compact text digest synthesized across all trace lanes for the 120s macro benchmark run.
+   - Pinpoints the **primary sequential critical path**, phase durations, milestone offsets, and identifies off-critical-path background operations.
+4. **`summary.json`**:
    - Primary SLI metrics (`ttfi_p90_ms`, `ttfi_p95_ms`, error rate, OOMs).
-3. **`monitor/profile/perfetto_url.txt`**:
-   - 1-click Perfetto UI link for human review and visual validation of track concurrency.
+5. **Perfetto UI Permalinks**:
+   - `monitor/profile/perfetto_cold_boot_url.txt` (Cold Boot Visual Trace)
+   - `monitor/profile/perfetto_warm_boot_url.txt` (Warm Boot P90 Visual Trace)
+   - `monitor/profile/perfetto_url.txt` (Macro Benchmark Visual Trace)
 
 ### 2. Targeted Subsystem Investigation (Read Only If Gated by Digest Findings)
 - **If router ExtProc, gRPC serialization, or Go execution is the bottleneck**:
