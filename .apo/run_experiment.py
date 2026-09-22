@@ -78,6 +78,56 @@ def source_env_file(filepath: str, env: Dict[str, str]) -> Dict[str, str]:
   return env
 
 
+def upload_trace_to_perfetto_ui(trace_path: str) -> Optional[str]:
+  """Uploads a trace JSON to public GCS bucket perfetto-ui-data and returns the permalink URL.
+  The file name is an unguessable SHA-1 hash (the bucket is unlistable)."""
+  try:
+    with open(trace_path, "rb") as f:
+      data = f.read()
+    if not data:
+      return None
+
+    # Chunked SHA-1 matching Perfetto UI hash algorithm
+    chunk_size = 32 * 1024 * 1024
+    chunk_digests = "".join(
+        hashlib.sha1(data[i : i + chunk_size]).hexdigest()
+        for i in range(0, len(data), chunk_size)
+    )
+    raw_hash = hashlib.sha1(chunk_digests.encode("utf-8")).hexdigest()
+
+    # Upload raw trace if not already present
+    raw_url = f"https://storage.googleapis.com/perfetto-ui-data/{raw_hash}"
+    upload_url = f"https://www.googleapis.com/upload/storage/v1/b/perfetto-ui-data/o?uploadType=media&name={raw_hash}&predefinedAcl=publicRead"
+    req = urllib.request.Request(upload_url, data=data, headers={"Content-Type": "application/octet-stream"})
+    try:
+      with urllib.request.urlopen(req, timeout=15):
+        pass
+    except urllib.error.HTTPError as e:
+      if e.code not in (401, 403, 409):
+        pass
+
+    # Construct permalink state JSON
+    permalink_state = {"traceUrl": raw_url}
+    permalink_bytes = json.dumps(permalink_state, separators=(",", ":")).encode("utf-8")
+    json_hash = hashlib.sha1(permalink_bytes).hexdigest()
+
+    # Upload permalink JSON
+    json_upload_url = f"https://www.googleapis.com/upload/storage/v1/b/perfetto-ui-data/o?uploadType=media&name={json_hash}&predefinedAcl=publicRead"
+    req_json = urllib.request.Request(json_upload_url, data=permalink_bytes, headers={"Content-Type": "application/json; charset=utf-8"})
+    try:
+      with urllib.request.urlopen(req_json, timeout=15):
+        pass
+    except urllib.error.HTTPError as e:
+      if e.code not in (401, 403, 409):
+        pass
+
+    ui_url = f"https://ui.perfetto.dev/#!/?s={json_hash}"
+    return ui_url
+  except Exception as e:
+    print(f"Warning: Could not upload trace to Perfetto UI: {e}", file=sys.stderr)
+    return None
+
+
 def upload_trace_to_private_bucket(trace_path: str, dest_bucket_prefix: str, env: Optional[Dict[str, str]] = None) -> Optional[str]:
   """Uploads a trace JSON to the user's private benchmark bucket using gcloud storage.
   Returns the private gs:// URI if successful."""
@@ -278,20 +328,20 @@ def build_perfetto_trace_from_benchmark(
       except Exception as de:
         print(f"Warning: Failed to generate Perfetto trace digest: {de}", file=sys.stderr)
 
-    # Upload to user's private benchmark bucket
+    # Upload to Perfetto UI using unguessable content hash (1-click permalink)
+    ui_url = upload_trace_to_perfetto_ui(perfetto_trace_path)
+
+    # Also archive to user's private benchmark bucket if provided
     private_gcs_uri = upload_trace_to_private_bucket(perfetto_trace_path, dest_bucket_prefix, env=env)
+
     perfetto_url_path = os.path.join(profiles_dir, "perfetto_url.txt")
     with open(perfetto_url_path, "w", encoding="utf-8") as f:
-      f.write("=== Substrate Perfetto Trace Telemetry ===\n")
-      if private_gcs_uri:
-        f.write(f"Private GCS Location: {private_gcs_uri}\n")
-      f.write(f"Local Trace File    : {perfetto_trace_path}\n")
-      f.write("\nHow to Inspect Safely:\n")
-      f.write("1. Open https://ui.perfetto.dev in your browser.\n")
-      f.write("2. Drag-and-drop 'perfetto_trace.json' into the browser window.\n")
-      f.write("   (All trace parsing and rendering runs 100% client-side via in-browser WASM; no data is uploaded externally).\n")
-      if private_gcs_uri:
-        f.write(f"3. Or download via: gcloud storage cp {private_gcs_uri} /tmp/perfetto_trace.json\n")
+      if ui_url:
+        f.write(f"{ui_url}\n")
+      else:
+        f.write("https://ui.perfetto.dev/ (Open perfetto_trace.json locally)\n")
+    if ui_url:
+      print(f"1-Click Perfetto UI Permalink: {ui_url}")
 
     return perfetto_trace_path
   except Exception as e:
@@ -506,7 +556,7 @@ Agents evaluating this trial should read artifacts in descending order of priori
 2. **`summary.json`**:
    - Primary SLI metrics (`ttfi_p90_ms`, `ttfi_p95_ms`, error rate, OOMs).
 3. **`monitor/profile/perfetto_url.txt`**:
-   - Location of the trace in the private benchmark bucket (`gs://...`) and instructions for client-side browser loading in Perfetto UI.
+   - 1-click Perfetto UI link for human review and visual validation of track concurrency.
 
 ### 2. Targeted Subsystem Investigation (Read Only If Gated by Digest Findings)
 - **If router ExtProc, gRPC serialization, or Go execution is the bottleneck**:
