@@ -40,6 +40,20 @@ except ImportError:
   compute_trace_digest = None
 
 
+def log(*args, component: str = "run_experiment", file=None, sep=" ", end="\n", **kwargs) -> None:
+  """Prints a log message prefixed with UTC timestamp and component."""
+  now = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")[:-4] + "Z"
+  target_file = file or sys.stdout
+  msg = sep.join(str(a) for a in args)
+  lines = msg.split("\n")
+  for line in lines:
+    built_in_print(f"{now} [{component}] {line}", file=target_file, flush=True)
+
+
+built_in_print = print
+print = log
+
+
 def run_cmd(
     cmd: List[str] | str,
     cwd: Optional[str] = None,

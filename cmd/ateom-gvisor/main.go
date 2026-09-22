@@ -1053,14 +1053,20 @@ func (s *AteomService) RestoreWorkload(ctx context.Context, req *ateompb.Restore
 		// Create and restore pause container
 		containersToDelete = append(containersToDelete, ocispec.PauseContainer)
 		pauseCtx, spanPause := tracer.Start(ctx, "Restore.RestorePauseContainer")
-		if err := rcmd.cmdCreate(pauseCtx, os.Stdout, ocispec.PauseContainer, nil); err != nil {
+		createCtx, spanCreate := tracer.Start(pauseCtx, "Restore.Pause.Create")
+		if err := rcmd.cmdCreate(createCtx, os.Stdout, ocispec.PauseContainer, nil); err != nil {
+			spanCreate.End()
 			spanPause.End()
 			return nil, fmt.Errorf("while creating pause container: %w", err)
 		}
-		if err := rcmd.cmdRestore(pauseCtx, os.Stdout, ocispec.PauseContainer, checkpointDir); err != nil {
+		spanCreate.End()
+		restoreCtx, spanRestore := tracer.Start(pauseCtx, "Restore.Pause.Restore")
+		if err := rcmd.cmdRestore(restoreCtx, os.Stdout, ocispec.PauseContainer, checkpointDir); err != nil {
+			spanRestore.End()
 			spanPause.End()
 			return nil, fmt.Errorf("while restoring pause container: %w", err)
 		}
+		spanRestore.End()
 		spanPause.End()
 	default:
 		return nil, fmt.Errorf("unexpected snapshot scope: %v", req.GetScope())
@@ -1078,31 +1084,46 @@ func (s *AteomService) RestoreWorkload(ctx context.Context, req *ateompb.Restore
 			return nil, fmt.Errorf("while starting json log pipe for %q: %w", ac.GetName(), err)
 		}
 		defer pw.Close()
+		_, spanRootfs := tracer.Start(appCtx, "Restore.AppRootfs:"+ac.GetName())
 		if err := imagecache.SetupBundleRootfs(ateompath.OCIBundlePath(req.GetActorUid(), ac.GetName())); err != nil {
+			spanRootfs.End()
 			spanApp.End()
 			return nil, fmt.Errorf("while composing %q rootfs: %w", ac.GetName(), err)
 		}
+		spanRootfs.End()
 		switch req.GetScope() {
 		case ateompb.SnapshotScope_SNAPSHOT_SCOPE_DATA:
 			containersToDelete = append(containersToDelete, ac.GetName())
-			if err := rcmd.cmdCreate(appCtx, pw, ac.GetName(), nil); err != nil {
+			createCtx, spanCreate := tracer.Start(appCtx, "Restore.AppCreate:"+ac.GetName())
+			if err := rcmd.cmdCreate(createCtx, pw, ac.GetName(), nil); err != nil {
+				spanCreate.End()
 				spanApp.End()
 				return nil, fmt.Errorf("while creating %q application container: %w", ac.GetName(), err)
 			}
-			if err := rcmd.cmdStart(appCtx, pw, ac.GetName()); err != nil {
+			spanCreate.End()
+			startCtx, spanStart := tracer.Start(appCtx, "Restore.AppStart:"+ac.GetName())
+			if err := rcmd.cmdStart(startCtx, pw, ac.GetName()); err != nil {
+				spanStart.End()
 				spanApp.End()
 				return nil, fmt.Errorf("while starting %q application container: %w", ac.GetName(), err)
 			}
+			spanStart.End()
 		case ateompb.SnapshotScope_SNAPSHOT_SCOPE_FULL, ateompb.SnapshotScope_SNAPSHOT_SCOPE_DATA_ON_GOLDEN:
 			containersToDelete = append(containersToDelete, ac.GetName())
-			if err := rcmd.cmdCreate(appCtx, pw, ac.GetName(), nil); err != nil {
+			createCtx, spanCreate := tracer.Start(appCtx, "Restore.AppCreate:"+ac.GetName())
+			if err := rcmd.cmdCreate(createCtx, pw, ac.GetName(), nil); err != nil {
+				spanCreate.End()
 				spanApp.End()
 				return nil, fmt.Errorf("while creating %q application container: %w", ac.GetName(), err)
 			}
-			if err := rcmd.cmdRestore(appCtx, pw, ac.GetName(), checkpointDir); err != nil {
+			spanCreate.End()
+			restoreCtx, spanRestore := tracer.Start(appCtx, "Restore.AppRestore:"+ac.GetName())
+			if err := rcmd.cmdRestore(restoreCtx, pw, ac.GetName(), checkpointDir); err != nil {
+				spanRestore.End()
 				spanApp.End()
 				return nil, fmt.Errorf("while restoring %q application container: %w", ac.GetName(), err)
 			}
+			spanRestore.End()
 		default:
 			spanApp.End()
 			return nil, fmt.Errorf("unexpected snapshot scope: %v", req.GetScope())

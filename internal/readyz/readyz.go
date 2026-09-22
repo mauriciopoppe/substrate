@@ -34,6 +34,8 @@ import (
 
 	"github.com/agent-substrate/substrate/internal/ateerrors"
 	"github.com/agent-substrate/substrate/internal/proto/ateompb"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
 )
@@ -124,10 +126,20 @@ func Wait(ctx context.Context, containerName string, probe *ateompb.Readyz, acto
 			lastErr = err
 		}
 		if ok {
+			elapsed := time.Since(start)
+			span := trace.SpanFromContext(ctx)
+			if span.IsRecording() {
+				span.SetAttributes(
+					attribute.Int("readyz.attempts", attempts),
+					attribute.Float64("readyz.elapsed_ms", float64(elapsed.Microseconds())/1000.0),
+					attribute.String("readyz.url", url),
+					attribute.String("readyz.container", containerName),
+				)
+			}
 			slog.InfoContext(ctx, "Readyz reached 200",
 				slog.String("container", containerName),
 				slog.String("url", url),
-				slog.Duration("elapsed", time.Since(start)),
+				slog.Duration("elapsed", elapsed),
 				slog.Int("attempts", attempts))
 			return nil
 		}
